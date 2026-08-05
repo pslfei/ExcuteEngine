@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64</Platforms>
+    <BaseOutputPath>bin</BaseOutputPath>
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="bin\**" />
+    <Compile Remove="FaultDiagnosis\**" />
+    <Compile Remove="HOLLYSYS\**" />
+    <Compile Remove="Macro\**" />
+    <EmbeddedResource Remove="bin\**" />
+    <EmbeddedResource Remove="FaultDiagnosis\**" />
+    <EmbeddedResource Remove="HOLLYSYS\**" />
+    <EmbeddedResource Remove="Macro\**" />
+    <None Remove="bin\**" />
+    <None Remove="FaultDiagnosis\**" />
+    <None Remove="HOLLYSYS\**" />
+    <None Remove="Macro\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DCSCommon\DCSCommon.csproj" />
+    <ProjectReference Include="..\DCSType\DCSType.csproj" />
+    <ProjectReference Include="..\PerformanceCalc\PerformanceCalc.csproj" />
+    <ProjectReference Include="..\POWERSISAI\POWERSISAI.csproj" />
+    <ProjectReference Include="..\TDServer.Service\TDServer.Service.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Warn\" />
+  </ItemGroup>
+
+</Project>

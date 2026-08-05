@@ -1,0 +1,235 @@
+using System.Reflection;
+using POWERSISAI;
+using DCSCommon;
+using DCSType;
+using TDServer.Service;
+using System.Runtime.InteropServices;
+
+namespace FunctionCode
+{
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    [FCName("PCA372")]
+    [FCDisplay("PCA372")]
+    public partial class PCA372 : WarnFunction
+    {
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("0段抽气温度大于200")]
+	    public LA Condition1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("零段抽汽逆止阀后管顶壁温")]
+	    public LAExWarn IN1 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("零段抽汽逆止阀后管底壁温")]
+	    public LAExWarn IN2 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("零段抽汽电动闸阀后管顶壁温")]
+	    public LAExWarn IN3 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("零段抽汽电动闸阀后管底壁温")]
+	    public LAExWarn IN4 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出1")]
+	    public LA OUT_R1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出1")]
+	    public LA OUT_B1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出1")]
+	    public LD OUT_F1 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出1")]
+	    public LD OUT_W1 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出2")]
+	    public LA OUT_R2 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出2")]
+	    public LA OUT_B2 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出2")]
+	    public LD OUT_F2 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出2")]
+	    public LD OUT_W2 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出3")]
+	    public LA OUT_R3 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出3")]
+	    public LA OUT_B3 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出3")]
+	    public LD OUT_F3 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出3")]
+	    public LD OUT_W3 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出4")]
+	    public LA OUT_R4 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出4")]
+	    public LA OUT_B4 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出4")]
+	    public LD OUT_F4 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出4")]
+	    public LD OUT_W4 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("")]
+	    public LA OUT_ste = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public bool[] TempOUT_W = new bool[4] {false,false,false,false};
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public bool[] OldTempOUT_W = new bool[4] {false,false,false,false};
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public long[] StartTime = new long[4] {-1,-1,-1,-1};
+
+		public PCA372()
+		{
+			ModelID = 407;
+			SysID = 5;
+			FcType = enumType.Warn;
+			FcName = "PCA372";
+			FcCode = "PCA";
+		}
+
+	    protected override void Run(ICommand cmd)
+	    {
+	        string ModelInfo = @"{""id"":""407"",""name"":""PCA372"",""description"":""0号高加抽气壁温"",""founder"":""admin"",""creatTime"":""2025-03-03 16:00:04"",""Modifier"":""admin"",""modifiedTime"":""2025-03-03 16:06:50"",""algorithm"":""PCA"",""sampling"":""300"",""monitor"":null,""trainTime"":[{""st"":""2025-02-09 05:25:15"",""et"":""2025-03-03 05:33:30"",""duration"":1901295,""number"":6338,""filter"":90,""mode"":6248,""id"":null,""load"":null,""temp"":null,""LAY_TABLE_INDEX"":1,""limitnumber"":0,""conditionnumber"":0}],""model_state"":"""",""pointInfo"":[{""PointId"":""dcs_LBQ00CT611"",""Description"":""零段抽汽逆止阀后管顶壁温"",""Unit"":""℃"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""1.01"",""lowerBound"":""-1.01"",""LAY_TABLE_INDEX"":1,""type"":null,""TMax"":""487.48"",""TMin"":""427.40"",""TAvg"":""472.76"",""DMax"":""1.30"",""DMin"":""0.00"",""DAvg"":""0.23"",""C95"":""0.82"",""C99"":""1.01""},{""PointId"":""dcs_LBQ00CT612"",""Description"":""零段抽汽逆止阀后管底壁温"",""Unit"":""℃"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0.67"",""lowerBound"":""-0.67"",""LAY_TABLE_INDEX"":2,""type"":null,""TMax"":""490.02"",""TMin"":""429.70"",""TAvg"":""475.20"",""DMax"":""0.82"",""DMin"":""0.00"",""DAvg"":""0.16"",""C95"":""0.54"",""C99"":""0.67""},{""PointId"":""dcs_LBQ00CT613"",""Description"":""零段抽汽电动闸阀后管顶壁温"",""Unit"":""℃"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0.63"",""lowerBound"":""-0.63"",""LAY_TABLE_INDEX"":3,""type"":null,""TMax"":""488.27"",""TMin"":""428.38"",""TAvg"":""473.80"",""DMax"":""0.83"",""DMin"":""0.00"",""DAvg"":""0.14"",""C95"":""0.51"",""C99"":""0.63""},{""PointId"":""dcs_LBQ00CT614"",""Description"":""零段抽汽电动闸阀后管底壁温"",""Unit"":""℃"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0.92"",""lowerBound"":""-0.92"",""LAY_TABLE_INDEX"":4,""type"":null,""TMax"":""491.05"",""TMin"":""430.61"",""TAvg"":""476.14"",""DMax"":""1.01"",""DMin"":""0.00"",""DAvg"":""0.21"",""C95"":""0.75"",""C99"":""0.92""}],""outPointInfo"":null,""biasPointInfo"":null,""faultVariablePointInfo"":null,""btmState"":""已下装"",""version"":""v-2025-03-03 16:06:50"",""smote"":null,""online"":1,""unit"":null,""versionNumber"":0,""Envelopes"":null,""samrangenew"":null,""para"":{""Model_info"":{""Train_X_min"":[427.4,429.7,428.38,430.612],""Train_X_max"":[487.484,490.022,488.274,491.049],""Train_X_std"":[6.378,6.382,6.308,6.382],""Train_X_mean"":[472.76,475.202,473.797,476.137],""Train_X_bais_max"":[[1.302,0.816,0.828,1.012]],""Train_X_bais_min"":[[0.0,0.0,0.0,0.0]],""Train_X_bais_mean"":[[0.229,0.155,0.142,0.205]],""QCUL_95"":0.0209877063,""QCUL_99"":0.0372474939,""QCUL_95_line"":[0.819,0.544,0.513,0.747],""QCUL_99_line"":[1.006,0.667,0.63,0.918],""T2CUL_95"":3.844,""T2CUL_99"":6.64,""T2CUL_95_line"":[0.158,0.158,0.156,0.158],""T2CUL_99_line"":[0.208,0.208,0.206,0.208],""Kesi_95"":1.567,""Kesi_99"":1.353,""Kesi_95_line"":[0.101,0.101,0.1,0.101],""Kesi_99_line"":[0.094,0.094,0.093,0.094],""COV"":[[1.0,0.997,1.0,0.996],[0.997,1.0,0.998,1.0],[1.0,0.998,1.0,0.998],[0.996,1.0,0.998,1.0]],""K"":1,""R"":0.999,""featValue"":[3.995,0.005,0.0,0.0],""featVec"":[[-0.5,0.626,-0.593,0.079],[-0.5,-0.393,-0.095,-0.766],[-0.5,0.345,0.793,0.051],[-0.5,-0.578,-0.105,0.636]],""selectVec"":[[-0.5],[-0.5],[-0.5],[-0.5]]},""Model_type"":""PCA"",""BeforeCleanSamNum"":6338,""AfterCleanSamNum"":6248,""CleanOrNot"":true},""alarmmodelset"":{""alarmname"":""0段抽气温度大于200"",""alarmcondition"":""[dcs_LBQ00CT601]>200""},""copy"":false,""principal"":""1"",""precision"":""99.9%"",""rate"":""0.85"",""iter"":""800"",""layer"":""5"",""component"":null,""count"":null,""version1"":""1""}";
+	        string InputInfo = @"{""Model_id"":407,""version"":""v-2025-03-03 16:06:50"",""Test_Data"":[[" + IN1 + "," + IN2 + "," + IN3 + "," + IN4 + "]],\"Target_Data\":[[]]}";
+	        string jsonResult = PCA.Diagnosis(ModelInfo, InputInfo, 1, 1);
+			if (string.IsNullOrEmpty(jsonResult)) { return; }
+	        float[][] reconData = PCA.OutputInfo.reconData;
+	        float[][] errorData = PCA.OutputInfo.errorData;
+	        float[][] paraState = PCA.OutputInfo.paraState;
+	        float[] index = PCA.OutputInfo.Index;
+
+	        OUT_R1[0] = reconData[0][0];
+	        OUT_B1[0] = errorData[0][0];
+	        OUT_F1[0] = paraState[0][0];
+	        OUT_R2[0] = reconData[0][1];
+	        OUT_B2[0] = errorData[0][1];
+	        OUT_F2[0] = paraState[0][1];
+	        OUT_R3[0] = reconData[0][2];
+	        OUT_B3[0] = errorData[0][2];
+	        OUT_F3[0] = paraState[0][2];
+	        OUT_R4[0] = reconData[0][3];
+	        OUT_B4[0] = errorData[0][3];
+	        OUT_F4[0] = paraState[0][3];
+	        OUT_ste[0] = index[0];
+
+			LAExWarn[] arrIN = new LAExWarn[4] {IN1,IN2,IN3,IN4};
+			float[] arrOUT_B = new float[4] {OUT_B1,OUT_B2,OUT_B3,OUT_B4};
+			LD[] arrOUT_W = new LD[4] { OUT_W1,OUT_W2,OUT_W3,OUT_W4 };
+			
+	        if (!(Condition1>200))
+			{
+				for (int i = 0; i < arrIN.Length; i++)
+				{
+					StartTime[i] = 0;
+					arrIN[i].active = false;
+					arrOUT_W[i].buffer = false;
+				}
+				return;
+			}
+
+
+			for (int i = 0; i < arrOUT_B.Length; i++)
+			{
+				if (!arrIN[i].Runable || arrIN[i].AlarmType != 0 || arrIN[i].HasConstraint)
+				{
+					arrOUT_W[i].buffer = false;
+					OldTempOUT_W[i] = false;
+					StartTime[i] = -1;
+					continue;
+				}
+				if (arrOUT_B[i] > arrIN[i].WarnUpLimit)
+				{
+					TempOUT_W[i] = true;
+					arrIN[i].LimitAlarmType = 1;
+				}
+				else if (arrOUT_B[i] < arrIN[i].WarnLowLimit)
+				{
+					TempOUT_W[i] = true;
+					arrIN[i].LimitAlarmType = 4;
+				}
+				else
+				{
+					TempOUT_W[i] = false;
+				}
+				if (TempOUT_W[i])
+				{
+					if (!OldTempOUT_W[i] && TempOUT_W[i])
+					{
+						StartTime[i] = ExcuteEngine.cycle * ExcuteEngine.cycleCount;
+					}
+					if (StartTime[i] >= 0 && ExcuteEngine.cycle * ExcuteEngine.cycleCount >= StartTime[i] + arrIN[i].DelayTime * 1000)
+					{
+						StartTime[i] = -1;
+						arrOUT_W[i].buffer = true;
+						UnAck = true;
+						arrIN[i].active = true;
+						arrIN[i].unAck = true;
+					}
+				}
+				else
+				{
+					arrIN[i].active = false;
+					arrOUT_W[i].buffer = false;
+					StartTime[i] = -1;
+				}
+				OldTempOUT_W[i] = TempOUT_W[i];
+			}
+			WarnActive = false;
+			for (int i = 0; i < arrOUT_W.Length; i++)
+			{
+				WarnActive |= arrOUT_W[i].buffer;
+			}
+
+			if (!WarnActive && !UnAck)
+			{
+				WarnState = 1;
+			}
+			else if (!WarnActive && UnAck) 
+			{
+				WarnState = 2; 
+			}
+			else if (WarnActive && !UnAck) 
+			{
+				WarnState = 4; 
+			}
+			else if (WarnActive && UnAck) 
+			{
+				WarnState = 8; 
+			}
+	    }
+    }
+}

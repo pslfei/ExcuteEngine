@@ -1,0 +1,442 @@
+using System.Reflection;
+using POWERSISAI;
+using DCSCommon;
+using DCSType;
+using TDServer.Service;
+using System.Runtime.InteropServices;
+
+namespace FunctionCode
+{
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    [FCName("PCA353Copy")]
+    [FCDisplay("PCA353Copy")]
+    public partial class PCA353Copy : WarnFunction
+    {
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("B侧引风机运行")]
+	    public LA Condition1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("脱硝装置B侧进出口差压")]
+	    public LAExWarn IN1 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("空预器B进口烟气压力")]
+	    public LAExWarn IN2 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("空预器B出口烟气压力")]
+	    public LAExWarn IN3 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("空预器B进出口烟气差压")]
+	    public LAExWarn IN4 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("静电除尘B入口烟气压力1")]
+	    public LAExWarn IN5 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("静电除尘B入口烟气压力2")]
+	    public LAExWarn IN6 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("静电除尘B入口烟气压力3")]
+	    public LAExWarn IN7 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("静电除尘B出口烟气压力1")]
+	    public LAExWarn IN8 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("静电除尘B出口烟气压力2")]
+	    public LAExWarn IN9 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("静电除尘B出口烟气压力3")]
+	    public LAExWarn IN10 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("引风机B入口烟气压力")]
+	    public LAExWarn IN11 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("引风机B出口烟气压力")]
+	    public LAExWarn IN12 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("引风机B进气箱入口压力")]
+	    public LAExWarn IN13 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出1")]
+	    public LA OUT_R1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出1")]
+	    public LA OUT_B1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出1")]
+	    public LD OUT_F1 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出1")]
+	    public LD OUT_W1 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出2")]
+	    public LA OUT_R2 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出2")]
+	    public LA OUT_B2 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出2")]
+	    public LD OUT_F2 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出2")]
+	    public LD OUT_W2 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出3")]
+	    public LA OUT_R3 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出3")]
+	    public LA OUT_B3 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出3")]
+	    public LD OUT_F3 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出3")]
+	    public LD OUT_W3 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出4")]
+	    public LA OUT_R4 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出4")]
+	    public LA OUT_B4 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出4")]
+	    public LD OUT_F4 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出4")]
+	    public LD OUT_W4 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出5")]
+	    public LA OUT_R5 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出5")]
+	    public LA OUT_B5 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出5")]
+	    public LD OUT_F5 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出5")]
+	    public LD OUT_W5 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出6")]
+	    public LA OUT_R6 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出6")]
+	    public LA OUT_B6 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出6")]
+	    public LD OUT_F6 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出6")]
+	    public LD OUT_W6 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出7")]
+	    public LA OUT_R7 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出7")]
+	    public LA OUT_B7 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出7")]
+	    public LD OUT_F7 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出7")]
+	    public LD OUT_W7 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出8")]
+	    public LA OUT_R8 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出8")]
+	    public LA OUT_B8 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出8")]
+	    public LD OUT_F8 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出8")]
+	    public LD OUT_W8 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出9")]
+	    public LA OUT_R9 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出9")]
+	    public LA OUT_B9 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出9")]
+	    public LD OUT_F9 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出9")]
+	    public LD OUT_W9 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出10")]
+	    public LA OUT_R10 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出10")]
+	    public LA OUT_B10 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出10")]
+	    public LD OUT_F10 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出10")]
+	    public LD OUT_W10 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出11")]
+	    public LA OUT_R11 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出11")]
+	    public LA OUT_B11 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出11")]
+	    public LD OUT_F11 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出11")]
+	    public LD OUT_W11 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出12")]
+	    public LA OUT_R12 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出12")]
+	    public LA OUT_B12 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出12")]
+	    public LD OUT_F12 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出12")]
+	    public LD OUT_W12 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出13")]
+	    public LA OUT_R13 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出13")]
+	    public LA OUT_B13 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出13")]
+	    public LD OUT_F13 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出13")]
+	    public LD OUT_W13 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("")]
+	    public LA OUT_ste = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public bool[] TempOUT_W = new bool[13] {false,false,false,false,false,false,false,false,false,false,false,false,false};
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public bool[] OldTempOUT_W = new bool[13] {false,false,false,false,false,false,false,false,false,false,false,false,false};
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public long[] StartTime = new long[13] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+
+		public PCA353Copy()
+		{
+			ModelID = 382;
+			SysID = 93;
+			FcType = enumType.Warn;
+			FcName = "PCA353Copy";
+			FcCode = "PCA";
+		}
+
+	    protected override void Run(ICommand cmd)
+	    {
+	        string ModelInfo = @"{""id"":""382"",""name"":""PCA353Copy"",""description"":""B侧风烟烟气压力"",""founder"":""admin"",""creatTime"":""2024-04-09 17:09:30"",""Modifier"":""admin"",""modifiedTime"":""2024-04-10 14:44:31"",""algorithm"":""PCA"",""sampling"":""300"",""monitor"":"""",""trainTime"":[{""st"":""2024-03-13 04:19:12"",""et"":""2024-04-08 00:41:04"",""duration"":2233312,""number"":7445,""filter"":204,""mode"":7241,""id"":null,""load"":null,""temp"":null,""LAY_TABLE_INDEX"":1,""limitnumber"":0,""conditionnumber"":0}],""model_state"":"""",""pointInfo"":[{""PointId"":""dcs_HSA50DP101"",""Description"":""脱硝装置B侧进出口差压"",""Unit"":""Pa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""22.28"",""lowerBound"":""-22.28"",""LAY_TABLE_INDEX"":1,""type"":null,""TMax"":""403.83"",""TMin"":""102.52"",""TAvg"":""262.13"",""DMax"":""33.32"",""DMin"":""0.00"",""DAvg"":""5.20"",""C95"":""18.17"",""C99"":""22.28""},{""PointId"":""dcs_HLA20CP108"",""Description"":""空预器B进口烟气压力"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.08"",""lowerBound"":""-0.08"",""LAY_TABLE_INDEX"":2,""type"":null,""TMax"":""-0.63"",""TMin"":""-1.74"",""TAvg"":""-1.15"",""DMax"":""0.19"",""DMin"":""0.00"",""DAvg"":""0.02"",""C95"":""0.06"",""C99"":""0.08""},{""PointId"":""dcs_HNA20CP102"",""Description"":""空预器B出口烟气压力"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.14"",""lowerBound"":""-0.14"",""LAY_TABLE_INDEX"":3,""type"":null,""TMax"":""-1.51"",""TMin"":""-4.76"",""TAvg"":""-3.15"",""DMax"":""0.69"",""DMin"":""0.00"",""DAvg"":""0.03"",""C95"":""0.11"",""C99"":""0.14""},{""PointId"":""dcs_HNA20DP101"",""Description"":""空预器B进出口烟气差压"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.08"",""lowerBound"":""-0.08"",""LAY_TABLE_INDEX"":4,""type"":null,""TMax"":""3.29"",""TMin"":""0.79"",""TAvg"":""1.99"",""DMax"":""0.47"",""DMin"":""0.00"",""DAvg"":""0.02"",""C95"":""0.07"",""C99"":""0.08""},{""PointId"":""dcs_HNA20CP111"",""Description"":""静电除尘B入口烟气压力1"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.13"",""lowerBound"":""-0.13"",""LAY_TABLE_INDEX"":5,""type"":null,""TMax"":""-1.65"",""TMin"":""-5.23"",""TAvg"":""-3.48"",""DMax"":""0.28"",""DMin"":""0.00"",""DAvg"":""0.03"",""C95"":""0.10"",""C99"":""0.13""},{""PointId"":""dcs_HNA20CP112"",""Description"":""静电除尘B入口烟气压力2"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.10"",""lowerBound"":""-0.10"",""LAY_TABLE_INDEX"":6,""type"":null,""TMax"":""-1.66"",""TMin"":""-5.21"",""TAvg"":""-3.49"",""DMax"":""0.30"",""DMin"":""0.00"",""DAvg"":""0.02"",""C95"":""0.09"",""C99"":""0.10""},{""PointId"":""dcs_HNA20CP113"",""Description"":""静电除尘B入口烟气压力3"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.10"",""lowerBound"":""-0.10"",""LAY_TABLE_INDEX"":7,""type"":null,""TMax"":""-1.65"",""TMin"":""-5.17"",""TAvg"":""-3.46"",""DMax"":""0.30"",""DMin"":""0.00"",""DAvg"":""0.02"",""C95"":""0.08"",""C99"":""0.10""},{""PointId"":""dcs_HNA22CP111"",""Description"":""静电除尘B出口烟气压力1"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.18"",""lowerBound"":""-0.18"",""LAY_TABLE_INDEX"":8,""type"":null,""TMax"":""-2.12"",""TMin"":""-6.24"",""TAvg"":""-4.27"",""DMax"":""0.34"",""DMin"":""0.00"",""DAvg"":""0.04"",""C95"":""0.15"",""C99"":""0.18""},{""PointId"":""dcs_HNA22CP112"",""Description"":""静电除尘B出口烟气压力2"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.18"",""lowerBound"":""-0.18"",""LAY_TABLE_INDEX"":9,""type"":null,""TMax"":""-2.13"",""TMin"":""-6.28"",""TAvg"":""-4.30"",""DMax"":""0.34"",""DMin"":""0.00"",""DAvg"":""0.04"",""C95"":""0.15"",""C99"":""0.18""},{""PointId"":""dcs_HNA22CP113"",""Description"":""静电除尘B出口烟气压力3"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.18"",""lowerBound"":""-0.18"",""LAY_TABLE_INDEX"":10,""type"":null,""TMax"":""-2.13"",""TMin"":""-6.26"",""TAvg"":""-4.29"",""DMax"":""0.33"",""DMin"":""0.00"",""DAvg"":""0.04"",""C95"":""0.14"",""C99"":""0.18""},{""PointId"":""dcs_HNA20CP103"",""Description"":""引风机B入口烟气压力"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.19"",""lowerBound"":""-0.19"",""LAY_TABLE_INDEX"":11,""type"":null,""TMax"":""-2.30"",""TMin"":""-6.80"",""TAvg"":""-4.67"",""DMax"":""0.35"",""DMin"":""0.00"",""DAvg"":""0.04"",""C95"":""0.15"",""C99"":""0.19""},{""PointId"":""dcs_HNA20CP104"",""Description"":""引风机B出口烟气压力"",""Unit"":""KPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.01"",""lowerBound"":""-0.01"",""LAY_TABLE_INDEX"":12,""type"":null,""TMax"":""1.69"",""TMin"":""0.41"",""TAvg"":""1.12"",""DMax"":""0.01"",""DMin"":""0.00"",""DAvg"":""0.00"",""C95"":""0.01"",""C99"":""0.01""},{""PointId"":""dcs_HNC20CP101"",""Description"":""引风机B进气箱入口压力"",""Unit"":""kPa"",""Upper"":"""",""Lower"":"""",""dead"":false,""limit"":false,""Lock"":false,""upperBound"":""0.19"",""lowerBound"":""-0.19"",""LAY_TABLE_INDEX"":13,""type"":null,""TMax"":""-2.41"",""TMin"":""-7.23"",""TAvg"":""-4.97"",""DMax"":""0.36"",""DMin"":""0.00"",""DAvg"":""0.05"",""C95"":""0.16"",""C99"":""0.19""}],""outPointInfo"":null,""biasPointInfo"":null,""faultVariablePointInfo"":null,""btmState"":""已下装"",""version"":""v-2024-04-10 14:44:31"",""smote"":null,""online"":1,""unit"":null,""versionNumber"":0,""Envelopes"":null,""samrangenew"":null,""para"":{""Model_info"":{""Train_X_min"":[102.52,-1.739,-4.756,0.785,-5.23,-5.213,-5.166,-6.24,-6.282,-6.256,-6.801,0.408,-7.226],""Train_X_max"":[403.833,-0.631,-1.506,3.288,-1.652,-1.663,-1.648,-2.118,-2.133,-2.129,-2.299,1.685,-2.411],""Train_X_std"":[86.058,0.277,0.948,0.691,1.067,1.059,1.051,1.236,1.246,1.239,1.364,0.277,1.471],""Train_X_mean"":[262.131,-1.151,-3.153,1.992,-3.484,-3.489,-3.462,-4.273,-4.302,-4.286,-4.674,1.122,-4.972],""Train_X_bais_max"":[[33.324,0.19,0.691,0.469,0.28,0.295,0.302,0.335,0.336,0.334,0.346,0.013,0.357]],""Train_X_bais_min"":[[0.002,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]],""Train_X_bais_mean"":[[5.196,0.017,0.029,0.017,0.029,0.024,0.023,0.043,0.043,0.042,0.044,0.001,0.046]],""QCUL_95"":0.07941704,""QCUL_99"":0.125282153,""QCUL_95_line"":[18.171,0.062,0.111,0.068,0.103,0.085,0.079,0.146,0.146,0.144,0.153,0.005,0.158],""QCUL_99_line"":[22.276,0.076,0.137,0.084,0.126,0.104,0.097,0.179,0.179,0.177,0.187,0.006,0.194],""T2CUL_95"":7.822,""T2CUL_99"":11.358,""T2CUL_95_line"":[2.828,0.009,0.031,0.023,0.035,0.035,0.035,0.041,0.041,0.041,0.045,0.009,0.048],""T2CUL_99_line"":[3.408,0.011,0.038,0.027,0.042,0.042,0.042,0.049,0.049,0.049,0.054,0.011,0.058],""Kesi_95"":1.597,""Kesi_99"":1.433,""Kesi_95_line"":[1.278,0.004,0.014,0.01,0.016,0.016,0.016,0.018,0.018,0.018,0.02,0.004,0.022],""Kesi_99_line"":[1.21,0.004,0.013,0.01,0.015,0.015,0.015,0.017,0.018,0.017,0.019,0.004,0.021],""COV"":[[1.0,-0.989,-0.944,0.891,-0.955,-0.951,-0.95,-0.965,-0.965,-0.965,-0.967,0.843,-0.97],[-0.989,1.0,0.949,-0.893,0.957,0.954,0.953,0.966,0.966,0.966,0.968,-0.833,0.97],[-0.944,0.949,1.0,-0.99,0.999,0.999,0.999,0.993,0.993,0.994,0.993,-0.893,0.992],[0.891,-0.893,-0.99,1.0,-0.984,-0.986,-0.987,-0.973,-0.973,-0.973,-0.971,0.89,-0.969],[-0.955,0.957,0.999,-0.984,1.0,1.0,1.0,0.996,0.996,0.996,0.996,-0.892,0.996],[-0.951,0.954,0.999,-0.986,1.0,1.0,1.0,0.996,0.996,0.996,0.996,-0.894,0.995],[-0.95,0.953,0.999,-0.987,1.0,1.0,1.0,0.996,0.996,0.996,0.996,-0.895,0.995],[-0.965,0.966,0.993,-0.973,0.996,0.996,0.996,1.0,1.0,1.0,1.0,-0.893,1.0],[-0.965,0.966,0.993,-0.973,0.996,0.996,0.996,1.0,1.0,1.0,1.0,-0.893,1.0],[-0.965,0.966,0.994,-0.973,0.996,0.996,0.996,1.0,1.0,1.0,1.0,-0.892,1.0],[-0.967,0.968,0.993,-0.971,0.996,0.996,0.996,1.0,1.0,1.0,1.0,-0.892,1.0],[0.843,-0.833,-0.893,0.89,-0.892,-0.894,-0.895,-0.893,-0.893,-0.892,-0.892,1.0,-0.892],[-0.97,0.97,0.992,-0.969,0.996,0.995,0.995,1.0,1.0,1.0,1.0,-0.892,1.0]],""K"":3,""R"":0.998,""featValue"":[12.603,0.227,0.144,0.015,0.01,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0],""featVec"":[[-0.272,0.405,0.413,-0.034,-0.752,0.12,0.059,-0.031,-0.054,-0.054,0.004,0.006,-0.002],[0.272,-0.432,-0.343,0.462,-0.58,-0.146,-0.105,0.198,-0.006,0.002,-0.002,-0.001,-0.003],[0.28,0.057,0.205,0.325,0.026,-0.397,0.338,-0.702,-0.045,-0.04,0.016,0.006,0.005],[-0.275,-0.278,-0.454,-0.219,-0.171,0.479,0.249,-0.521,-0.023,-0.009,0.009,0.006,0.005],[0.281,0.007,0.147,0.216,0.092,0.448,0.71,0.352,-0.07,0.008,-0.053,0.075,-0.043],[0.281,0.031,0.163,0.181,0.041,0.437,-0.337,-0.171,0.541,-0.474,-0.063,-0.016,0.059],[0.281,0.038,0.167,0.163,0.043,0.421,-0.41,-0.192,-0.455,0.507,0.117,-0.052,-0.017],[0.281,-0.047,0.043,-0.331,-0.124,-0.049,0.027,-0.013,0.277,0.25,0.369,0.685,0.208],[0.281,-0.048,0.042,-0.329,-0.123,-0.044,0.038,-0.027,0.251,0.179,0.011,-0.239,-0.798],[0.281,-0.047,0.044,-0.325,-0.125,-0.042,0.12,0.018,0.199,0.243,-0.091,-0.598,0.56],[0.281,-0.057,0.027,-0.322,-0.083,-0.034,-0.08,-0.042,-0.294,-0.156,-0.774,0.294,0.022],[-0.255,-0.743,0.617,-0.046,0.033,-0.003,-0.006,-0.004,-0.002,-0.001,0.0,0.0,0.0],[0.281,-0.069,0.011,-0.311,-0.048,-0.018,-0.01,0.042,-0.474,-0.579,0.485,-0.141,0.008]],""selectVec"":[[-0.272,0.405,0.413],[0.272,-0.432,-0.343],[0.28,0.057,0.205],[-0.275,-0.278,-0.454],[0.281,0.007,0.147],[0.281,0.031,0.163],[0.281,0.038,0.167],[0.281,-0.047,0.043],[0.281,-0.048,0.042],[0.281,-0.047,0.044],[0.281,-0.057,0.027],[-0.255,-0.743,0.617],[0.281,-0.069,0.011]]},""Model_type"":""PCA"",""BeforeCleanSamNum"":7445,""AfterCleanSamNum"":7241,""CleanOrNot"":true},""alarmmodelset"":{""alarmname"":""B侧引风机运行"",""alarmcondition"":""[dcs_HNC20AN001CE]>170""},""copy"":true,""principal"":""3"",""precision"":""99.8%"",""rate"":""0.995"",""iter"":""800"",""layer"":""5"",""component"":null,""count"":null,""version1"":""1""}";
+	        string InputInfo = @"{""Model_id"":382,""version"":""v-2024-04-10 14:44:31"",""Test_Data"":[[" + IN1 + "," + IN2 + "," + IN3 + "," + IN4 + "," + IN5 + "," + IN6 + "," + IN7 + "," + IN8 + "," + IN9 + "," + IN10 + "," + IN11 + "," + IN12 + "," + IN13 + "]],\"Target_Data\":[[]]}";
+	        string jsonResult = PCA.Diagnosis(ModelInfo, InputInfo, 1, 1);
+			if (string.IsNullOrEmpty(jsonResult)) { return; }
+	        float[][] reconData = PCA.OutputInfo.reconData;
+	        float[][] errorData = PCA.OutputInfo.errorData;
+	        float[][] paraState = PCA.OutputInfo.paraState;
+	        float[] index = PCA.OutputInfo.Index;
+
+	        OUT_R1[0] = reconData[0][0];
+	        OUT_B1[0] = errorData[0][0];
+	        OUT_F1[0] = paraState[0][0];
+	        OUT_R2[0] = reconData[0][1];
+	        OUT_B2[0] = errorData[0][1];
+	        OUT_F2[0] = paraState[0][1];
+	        OUT_R3[0] = reconData[0][2];
+	        OUT_B3[0] = errorData[0][2];
+	        OUT_F3[0] = paraState[0][2];
+	        OUT_R4[0] = reconData[0][3];
+	        OUT_B4[0] = errorData[0][3];
+	        OUT_F4[0] = paraState[0][3];
+	        OUT_R5[0] = reconData[0][4];
+	        OUT_B5[0] = errorData[0][4];
+	        OUT_F5[0] = paraState[0][4];
+	        OUT_R6[0] = reconData[0][5];
+	        OUT_B6[0] = errorData[0][5];
+	        OUT_F6[0] = paraState[0][5];
+	        OUT_R7[0] = reconData[0][6];
+	        OUT_B7[0] = errorData[0][6];
+	        OUT_F7[0] = paraState[0][6];
+	        OUT_R8[0] = reconData[0][7];
+	        OUT_B8[0] = errorData[0][7];
+	        OUT_F8[0] = paraState[0][7];
+	        OUT_R9[0] = reconData[0][8];
+	        OUT_B9[0] = errorData[0][8];
+	        OUT_F9[0] = paraState[0][8];
+	        OUT_R10[0] = reconData[0][9];
+	        OUT_B10[0] = errorData[0][9];
+	        OUT_F10[0] = paraState[0][9];
+	        OUT_R11[0] = reconData[0][10];
+	        OUT_B11[0] = errorData[0][10];
+	        OUT_F11[0] = paraState[0][10];
+	        OUT_R12[0] = reconData[0][11];
+	        OUT_B12[0] = errorData[0][11];
+	        OUT_F12[0] = paraState[0][11];
+	        OUT_R13[0] = reconData[0][12];
+	        OUT_B13[0] = errorData[0][12];
+	        OUT_F13[0] = paraState[0][12];
+	        OUT_ste[0] = index[0];
+
+			LAExWarn[] arrIN = new LAExWarn[13] {IN1,IN2,IN3,IN4,IN5,IN6,IN7,IN8,IN9,IN10,IN11,IN12,IN13};
+			float[] arrOUT_B = new float[13] {OUT_B1,OUT_B2,OUT_B3,OUT_B4,OUT_B5,OUT_B6,OUT_B7,OUT_B8,OUT_B9,OUT_B10,OUT_B11,OUT_B12,OUT_B13};
+			LD[] arrOUT_W = new LD[13] { OUT_W1,OUT_W2,OUT_W3,OUT_W4,OUT_W5,OUT_W6,OUT_W7,OUT_W8,OUT_W9,OUT_W10,OUT_W11,OUT_W12,OUT_W13 };
+			
+	        if (!(Condition1>170))
+			{
+				for (int i = 0; i < arrIN.Length; i++)
+				{
+					StartTime[i] = 0;
+					arrIN[i].active = false;
+					arrOUT_W[i].buffer = false;
+				}
+				return;
+			}
+
+
+			for (int i = 0; i < arrOUT_B.Length; i++)
+			{
+				if (!arrIN[i].Runable || arrIN[i].AlarmType != 0 || arrIN[i].HasConstraint)
+				{
+					arrOUT_W[i].buffer = false;
+					OldTempOUT_W[i] = false;
+					StartTime[i] = -1;
+					continue;
+				}
+				if (arrOUT_B[i] > arrIN[i].WarnUpLimit)
+				{
+					TempOUT_W[i] = true;
+					arrIN[i].LimitAlarmType = 1;
+				}
+				else if (arrOUT_B[i] < arrIN[i].WarnLowLimit)
+				{
+					TempOUT_W[i] = true;
+					arrIN[i].LimitAlarmType = 4;
+				}
+				else
+				{
+					TempOUT_W[i] = false;
+				}
+				if (TempOUT_W[i])
+				{
+					if (!OldTempOUT_W[i] && TempOUT_W[i])
+					{
+						StartTime[i] = ExcuteEngine.cycle * ExcuteEngine.cycleCount;
+					}
+					if (StartTime[i] >= 0 && ExcuteEngine.cycle * ExcuteEngine.cycleCount >= StartTime[i] + arrIN[i].DelayTime * 1000)
+					{
+						StartTime[i] = -1;
+						arrOUT_W[i].buffer = true;
+						UnAck = true;
+						arrIN[i].active = true;
+						arrIN[i].unAck = true;
+					}
+				}
+				else
+				{
+					arrIN[i].active = false;
+					arrOUT_W[i].buffer = false;
+					StartTime[i] = -1;
+				}
+				OldTempOUT_W[i] = TempOUT_W[i];
+			}
+			WarnActive = false;
+			for (int i = 0; i < arrOUT_W.Length; i++)
+			{
+				WarnActive |= arrOUT_W[i].buffer;
+			}
+
+			if (!WarnActive && !UnAck)
+			{
+				WarnState = 1;
+			}
+			else if (!WarnActive && UnAck) 
+			{
+				WarnState = 2; 
+			}
+			else if (WarnActive && !UnAck) 
+			{
+				WarnState = 4; 
+			}
+			else if (WarnActive && UnAck) 
+			{
+				WarnState = 8; 
+			}
+	    }
+    }
+}

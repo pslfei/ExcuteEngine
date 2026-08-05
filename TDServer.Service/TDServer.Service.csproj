@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64</Platforms>
+    <LangVersion>10.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="wwwroot\**" />
+    <EmbeddedResource Remove="wwwroot\**" />
+    <None Remove="wwwroot\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="AssemblyInfo.cs" />
+    <Compile Remove="DynamicCompileFC - 副本.cs" />
+    <Compile Remove="DynamicCompileFC--原版.cs" />
+    <Compile Remove="Steam.cs" />
+    <Compile Remove="TDengineHelp.cs" />
+    <Compile Remove="TDService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="log4net.config" />
+    <None Remove="ReinitializeSheet增量更新方案.md" />
+    <None Remove="test.http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="9.0.0" />
+    <PackageReference Include="EPPlus" Version="7.0.8" />
+    <PackageReference Include="InfluxDB.Client" Version="4.14.0" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
+    <PackageReference Include="NPOI" Version="2.6.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.12.14" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="TDengine.Connector" Version="3.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DBServer.LogServer\DBServer.LogServer.csproj" />
+    <ProjectReference Include="..\DCSCommon\DCSCommon.csproj" />
+    <ProjectReference Include="..\DCSType\DCSType.csproj" />
+    <ProjectReference Include="..\EngineCore\EngineCore.csproj" />
+    <ProjectReference Include="..\PerformanceCalc\PerformanceCalc.csproj" />
+
+  </ItemGroup>
+
+
+
+
+</Project>

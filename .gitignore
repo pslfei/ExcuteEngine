@@ -1,0 +1,52 @@
+# Local AI/editor state
+.ace-tool/
+.specstory/
+.claude/
+
+# Visual Studio / IDE user state
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# .NET build outputs
+[Bb]in/
+[Oo]bj/
+[Pp]ublish/
+artifacts/
+TestResults/
+*.nupkg
+*.snupkg
+
+# Runtime logs and diagnostics
+[Ll]og/
+[Ll]ogs/
+*.log
+*.log.*
+*.dmp
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+DataCommSisKaT/Config.json
+DataCommSisKaT/cfg.ini
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+~$*

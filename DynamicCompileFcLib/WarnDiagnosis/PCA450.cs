@@ -1,0 +1,603 @@
+using System.Reflection;
+using POWERSISAI;
+using DCSCommon;
+using DCSType;
+using TDServer.Service;
+using System.Runtime.InteropServices;
+
+namespace FunctionCode
+{
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    [FCName("PCA450")]
+    [FCDisplay("PCA450")]
+    public partial class PCA450 : WarnFunction
+    {
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("负荷大于350")]
+	    public LA Condition1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁156号屏2号管壁温")]
+	    public LAExWarn IN1 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁156号屏3号管壁温")]
+	    public LAExWarn IN2 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁156号屏4号管壁温")]
+	    public LAExWarn IN3 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁156号屏5号管壁温")]
+	    public LAExWarn IN4 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁156号屏6号管壁温")]
+	    public LAExWarn IN5 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁157号屏1号管壁温")]
+	    public LAExWarn IN6 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁157号屏2号管壁温")]
+	    public LAExWarn IN7 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁157号屏3号管壁温")]
+	    public LAExWarn IN8 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁157号屏4号管壁温")]
+	    public LAExWarn IN9 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁157号屏5号管壁温")]
+	    public LAExWarn IN10 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁157号屏6号管壁温")]
+	    public LAExWarn IN11 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁158号屏1号管壁温")]
+	    public LAExWarn IN12 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁158号屏2号管壁温")]
+	    public LAExWarn IN13 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁158号屏3号管壁温")]
+	    public LAExWarn IN14 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁158号屏4号管壁温")]
+	    public LAExWarn IN15 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁158号屏5号管壁温")]
+	    public LAExWarn IN16 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁158号屏6号管壁温")]
+	    public LAExWarn IN17 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁159号屏1号管壁温")]
+	    public LAExWarn IN18 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁159号屏2号管壁温")]
+	    public LAExWarn IN19 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Input)]
+	    [PinDisplay("中温（分隔屏）过热器水冷壁159号屏3号管壁温")]
+	    public LAExWarn IN20 = new LAExWarn(QualityTypes.Good,false,"",float.MaxValue, float.MinValue,0,0,0,0,0, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出1")]
+	    public LA OUT_R1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出1")]
+	    public LA OUT_B1 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出1")]
+	    public LD OUT_F1 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出1")]
+	    public LD OUT_W1 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出2")]
+	    public LA OUT_R2 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出2")]
+	    public LA OUT_B2 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出2")]
+	    public LD OUT_F2 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出2")]
+	    public LD OUT_W2 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出3")]
+	    public LA OUT_R3 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出3")]
+	    public LA OUT_B3 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出3")]
+	    public LD OUT_F3 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出3")]
+	    public LD OUT_W3 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出4")]
+	    public LA OUT_R4 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出4")]
+	    public LA OUT_B4 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出4")]
+	    public LD OUT_F4 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出4")]
+	    public LD OUT_W4 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出5")]
+	    public LA OUT_R5 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出5")]
+	    public LA OUT_B5 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出5")]
+	    public LD OUT_F5 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出5")]
+	    public LD OUT_W5 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出6")]
+	    public LA OUT_R6 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出6")]
+	    public LA OUT_B6 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出6")]
+	    public LD OUT_F6 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出6")]
+	    public LD OUT_W6 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出7")]
+	    public LA OUT_R7 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出7")]
+	    public LA OUT_B7 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出7")]
+	    public LD OUT_F7 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出7")]
+	    public LD OUT_W7 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出8")]
+	    public LA OUT_R8 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出8")]
+	    public LA OUT_B8 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出8")]
+	    public LD OUT_F8 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出8")]
+	    public LD OUT_W8 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出9")]
+	    public LA OUT_R9 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出9")]
+	    public LA OUT_B9 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出9")]
+	    public LD OUT_F9 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出9")]
+	    public LD OUT_W9 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出10")]
+	    public LA OUT_R10 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出10")]
+	    public LA OUT_B10 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出10")]
+	    public LD OUT_F10 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出10")]
+	    public LD OUT_W10 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出11")]
+	    public LA OUT_R11 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出11")]
+	    public LA OUT_B11 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出11")]
+	    public LD OUT_F11 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出11")]
+	    public LD OUT_W11 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出12")]
+	    public LA OUT_R12 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出12")]
+	    public LA OUT_B12 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出12")]
+	    public LD OUT_F12 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出12")]
+	    public LD OUT_W12 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出13")]
+	    public LA OUT_R13 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出13")]
+	    public LA OUT_B13 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出13")]
+	    public LD OUT_F13 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出13")]
+	    public LD OUT_W13 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出14")]
+	    public LA OUT_R14 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出14")]
+	    public LA OUT_B14 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出14")]
+	    public LD OUT_F14 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出14")]
+	    public LD OUT_W14 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出15")]
+	    public LA OUT_R15 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出15")]
+	    public LA OUT_B15 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出15")]
+	    public LD OUT_F15 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出15")]
+	    public LD OUT_W15 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出16")]
+	    public LA OUT_R16 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出16")]
+	    public LA OUT_B16 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出16")]
+	    public LD OUT_F16 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出16")]
+	    public LD OUT_W16 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出17")]
+	    public LA OUT_R17 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出17")]
+	    public LA OUT_B17 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出17")]
+	    public LD OUT_F17 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出17")]
+	    public LD OUT_W17 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出18")]
+	    public LA OUT_R18 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出18")]
+	    public LA OUT_B18 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出18")]
+	    public LD OUT_F18 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出18")]
+	    public LD OUT_W18 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出19")]
+	    public LA OUT_R19 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出19")]
+	    public LA OUT_B19 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出19")]
+	    public LD OUT_F19 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出19")]
+	    public LD OUT_W19 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("重构输出20")]
+	    public LA OUT_R20 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("残差输出20")]
+	    public LA OUT_B20 = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出20")]
+	    public LD OUT_F20 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("故障输出20")]
+	    public LD OUT_W20 = new LD(QualityTypes.Good, false, false, false, 0, false);
+
+	    [PinType(PinTypes.Output)]
+	    [PinDisplay("")]
+	    public LA OUT_ste = new LA(QualityTypes.Good, false, false, false, false, false, float.MaxValue, float.MinValue, 0.0f, 0, 0.0f);
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public bool[] TempOUT_W = new bool[20] {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public bool[] OldTempOUT_W = new bool[20] {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};
+
+	    [PinType(PinTypes.Constant)]
+	    [PinDisplay("")]
+	    public long[] StartTime = new long[20] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+
+		public PCA450()
+		{
+			ModelID = 491;
+			SysID = 46;
+			FcType = enumType.Warn;
+			FcName = "PCA450";
+			FcCode = "PCA";
+		}
+
+	    protected override void Run(ICommand cmd)
+	    {
+	        string ModelInfo = @"{""id"":""491"",""name"":""PCA450"",""description"":""中温分隔屏过热器水冷壁27-41-60"",""founder"":""admin"",""creatTime"":""2025-12-10 17:23:54"",""Modifier"":""admin"",""modifiedTime"":""2025-12-10 17:25:17"",""algorithm"":""PCA"",""sampling"":""300"",""monitor"":null,""trainTime"":[{""st"":""2025-11-10 12:23:52"",""et"":""2025-12-07 16:02:40"",""duration"":2345928,""number"":7820,""filter"":2630,""mode"":5190,""id"":null,""load"":null,""temp"":null,""LAY_TABLE_INDEX"":1,""limitnumber"":0,""conditionnumber"":2540}],""model_state"":"""",""pointInfo"":[{""PointId"":""d1_10hah27ct141k"",""Description"":""中温（分隔屏）过热器水冷壁156号屏2号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":1,""type"":null,""TMax"":""562.90"",""TMin"":""483.54"",""TAvg"":""536.17"",""DMax"":""3.86"",""DMin"":""0.00"",""DAvg"":""0.72"",""C95"":""2.50"",""C99"":""3.06""},{""PointId"":""d1_10hah27ct142k"",""Description"":""中温（分隔屏）过热器水冷壁156号屏3号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":2,""type"":null,""TMax"":""562.53"",""TMin"":""481.86"",""TAvg"":""534.85"",""DMax"":""6.13"",""DMin"":""0.00"",""DAvg"":""1.00"",""C95"":""3.46"",""C99"":""4.24""},{""PointId"":""d1_10hah27ct143k"",""Description"":""中温（分隔屏）过热器水冷壁156号屏4号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":3,""type"":null,""TMax"":""569.97"",""TMin"":""489.64"",""TAvg"":""542.56"",""DMax"":""2.15"",""DMin"":""0.00"",""DAvg"":""0.51"",""C95"":""1.72"",""C99"":""2.11""},{""PointId"":""d1_10hah27ct144k"",""Description"":""中温（分隔屏）过热器水冷壁156号屏5号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":4,""type"":null,""TMax"":""572.00"",""TMin"":""491.58"",""TAvg"":""544.41"",""DMax"":""5.21"",""DMin"":""0.00"",""DAvg"":""0.75"",""C95"":""2.65"",""C99"":""3.25""},{""PointId"":""d1_10hah27ct145k"",""Description"":""中温（分隔屏）过热器水冷壁156号屏6号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":5,""type"":null,""TMax"":""573.07"",""TMin"":""495.12"",""TAvg"":""547.73"",""DMax"":""6.04"",""DMin"":""0.00"",""DAvg"":""1.43"",""C95"":""4.81"",""C99"":""5.88""},{""PointId"":""d1_10hah27ct146k"",""Description"":""中温（分隔屏）过热器水冷壁157号屏1号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":6,""type"":null,""TMax"":""565.33"",""TMin"":""489.64"",""TAvg"":""539.06"",""DMax"":""3.00"",""DMin"":""0.00"",""DAvg"":""0.64"",""C95"":""2.20"",""C99"":""2.70""},{""PointId"":""d1_10hah27ct147k"",""Description"":""中温（分隔屏）过热器水冷壁157号屏2号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":7,""type"":null,""TMax"":""564.87"",""TMin"":""486.90"",""TAvg"":""537.99"",""DMax"":""2.74"",""DMin"":""0.00"",""DAvg"":""0.68"",""C95"":""2.29"",""C99"":""2.79""},{""PointId"":""d1_10hah27ct148k"",""Description"":""中温（分隔屏）过热器水冷壁157号屏3号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":8,""type"":null,""TMax"":""563.40"",""TMin"":""483.78"",""TAvg"":""535.91"",""DMax"":""3.55"",""DMin"":""0.00"",""DAvg"":""0.84"",""C95"":""2.88"",""C99"":""3.53""},{""PointId"":""d1_10hah27ct149k"",""Description"":""中温（分隔屏）过热器水冷壁157号屏4号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":9,""type"":null,""TMax"":""570.37"",""TMin"":""490.06"",""TAvg"":""543.16"",""DMax"":""1.78"",""DMin"":""0.00"",""DAvg"":""0.38"",""C95"":""1.30"",""C99"":""1.59""},{""PointId"":""d1_10hah27ct150k"",""Description"":""中温（分隔屏）过热器水冷壁157号屏5号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":10,""type"":null,""TMax"":""571.57"",""TMin"":""491.96"",""TAvg"":""544.59"",""DMax"":""4.01"",""DMin"":""0.00"",""DAvg"":""0.80"",""C95"":""2.80"",""C99"":""3.43""},{""PointId"":""d1_10hah27ct151k"",""Description"":""中温（分隔屏）过热器水冷壁157号屏6号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":11,""type"":null,""TMax"":""569.93"",""TMin"":""491.80"",""TAvg"":""543.56"",""DMax"":""4.56"",""DMin"":""0.00"",""DAvg"":""0.96"",""C95"":""3.30"",""C99"":""4.04""},{""PointId"":""d1_10hah27ct152k"",""Description"":""中温（分隔屏）过热器水冷壁158号屏1号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":12,""type"":null,""TMax"":""565.62"",""TMin"":""489.32"",""TAvg"":""539.13"",""DMax"":""4.08"",""DMin"":""0.00"",""DAvg"":""0.72"",""C95"":""2.49"",""C99"":""3.05""},{""PointId"":""d1_10hah27ct153k"",""Description"":""中温（分隔屏）过热器水冷壁158号屏2号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":13,""type"":null,""TMax"":""564.62"",""TMin"":""486.48"",""TAvg"":""538.08"",""DMax"":""2.66"",""DMin"":""0.00"",""DAvg"":""0.61"",""C95"":""2.09"",""C99"":""2.56""},{""PointId"":""d1_10hah27ct154k"",""Description"":""中温（分隔屏）过热器水冷壁158号屏3号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":14,""type"":null,""TMax"":""563.07"",""TMin"":""483.45"",""TAvg"":""535.62"",""DMax"":""3.19"",""DMin"":""0.00"",""DAvg"":""0.81"",""C95"":""2.77"",""C99"":""3.39""},{""PointId"":""d1_10hah27ct155k"",""Description"":""中温（分隔屏）过热器水冷壁158号屏4号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":15,""type"":null,""TMax"":""570.00"",""TMin"":""490.54"",""TAvg"":""543.05"",""DMax"":""2.03"",""DMin"":""0.00"",""DAvg"":""0.36"",""C95"":""1.25"",""C99"":""1.53""},{""PointId"":""d1_10hah27ct156k"",""Description"":""中温（分隔屏）过热器水冷壁158号屏5号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":16,""type"":null,""TMax"":""571.60"",""TMin"":""492.85"",""TAvg"":""545.63"",""DMax"":""5.17"",""DMin"":""0.00"",""DAvg"":""1.05"",""C95"":""3.58"",""C99"":""4.38""},{""PointId"":""d1_10hah27ct157k"",""Description"":""中温（分隔屏）过热器水冷壁158号屏6号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":17,""type"":null,""TMax"":""571.05"",""TMin"":""493.90"",""TAvg"":""545.93"",""DMax"":""6.41"",""DMin"":""0.00"",""DAvg"":""1.31"",""C95"":""4.49"",""C99"":""5.49""},{""PointId"":""d1_10hah27ct158k"",""Description"":""中温（分隔屏）过热器水冷壁159号屏1号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":18,""type"":null,""TMax"":""563.63"",""TMin"":""488.34"",""TAvg"":""538.02"",""DMax"":""5.29"",""DMin"":""0.00"",""DAvg"":""0.78"",""C95"":""2.74"",""C99"":""3.37""},{""PointId"":""d1_10hah27ct159k"",""Description"":""中温（分隔屏）过热器水冷壁159号屏2号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":19,""type"":null,""TMax"":""564.30"",""TMin"":""486.90"",""TAvg"":""538.41"",""DMax"":""2.59"",""DMin"":""0.00"",""DAvg"":""0.57"",""C95"":""1.99"",""C99"":""2.44""},{""PointId"":""d1_10hah27ct160k"",""Description"":""中温（分隔屏）过热器水冷壁159号屏3号管壁温"",""Unit"":"""",""Upper"":""0"",""Lower"":""0"",""dead"":false,""limit"":null,""Lock"":false,""upperBound"":""0"",""lowerBound"":""0"",""LAY_TABLE_INDEX"":20,""type"":null,""TMax"":""565.30"",""TMin"":""486.48"",""TAvg"":""538.73"",""DMax"":""3.30"",""DMin"":""0.00"",""DAvg"":""0.70"",""C95"":""2.44"",""C99"":""2.99""}],""outPointInfo"":null,""biasPointInfo"":null,""faultVariablePointInfo"":null,""btmState"":""已下装"",""version"":""v-2025-12-10 17:25:17"",""smote"":null,""online"":1,""unit"":null,""versionNumber"":0,""Envelopes"":null,""samrangenew"":null,""para"":{""Model_info"":{""Train_X_min"":[483.54,481.86,489.64,491.58,495.12,489.64,486.9,483.775,490.06,491.96,491.8,489.32,486.48,483.45,490.54,492.85,493.9,488.34,486.9,486.475],""Train_X_max"":[562.9,562.533,569.967,572.0,573.067,565.333,564.867,563.4,570.367,571.567,569.933,565.617,564.617,563.067,570.0,571.6,571.05,563.633,564.3,565.3],""Train_X_std"":[9.527,9.657,9.469,9.515,9.392,9.387,9.447,9.565,9.492,9.447,9.394,9.449,9.451,9.557,9.424,9.37,9.313,9.433,9.402,9.539],""Train_X_mean"":[536.173,534.845,542.558,544.409,547.73,539.059,537.994,535.909,543.162,544.593,543.563,539.125,538.076,535.623,543.047,545.626,545.931,538.02,538.405,538.73],""Train_X_bais_max"":[[3.856,6.13,2.146,5.206,6.044,3.002,2.736,3.545,1.775,4.013,4.564,4.08,2.659,3.194,2.032,5.166,6.406,5.288,2.588,3.298]],""Train_X_bais_min"":[[0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.0,0.0,0.0,0.001,0.0,0.0,0.001,0.0,0.0,0.0,0.001,0.0,0.0]],""Train_X_bais_mean"":[[0.719,0.998,0.505,0.75,1.428,0.638,0.676,0.835,0.376,0.804,0.957,0.716,0.612,0.806,0.364,1.047,1.311,0.778,0.57,0.699]],""QCUL_95"":0.809053242,""QCUL_99"":1.44673455,""QCUL_95_line"":[2.495,3.463,1.723,2.648,4.807,2.204,2.285,2.884,1.298,2.8,3.302,2.491,2.088,2.772,1.251,3.58,4.485,2.744,1.987,2.439],""QCUL_99_line"":[3.057,4.242,2.109,3.249,5.876,2.7,2.794,3.532,1.59,3.431,4.044,3.053,2.555,3.394,1.531,4.382,5.489,3.366,2.435,2.99],""T2CUL_95"":3.844,""T2CUL_99"":6.641,""T2CUL_95_line"":[0.259,0.263,0.258,0.259,0.256,0.255,0.257,0.26,0.258,0.257,0.256,0.257,0.257,0.26,0.256,0.255,0.253,0.257,0.256,0.26],""T2CUL_99_line"":[0.341,0.345,0.339,0.34,0.336,0.336,0.338,0.342,0.34,0.338,0.336,0.338,0.338,0.342,0.337,0.335,0.333,0.337,0.336,0.341],""Kesi_95"":1.563,""Kesi_99"":1.337,""Kesi_95_line"":[0.165,0.168,0.164,0.165,0.163,0.163,0.164,0.166,0.165,0.164,0.163,0.164,0.164,0.166,0.164,0.163,0.162,0.164,0.163,0.166],""Kesi_99_line"":[0.153,0.155,0.152,0.153,0.151,0.151,0.152,0.154,0.152,0.152,0.151,0.152,0.152,0.153,0.151,0.15,0.149,0.151,0.151,0.153],""COV"":[[1.0,0.999,0.989,0.983,0.965,0.997,0.999,0.999,0.991,0.981,0.977,0.996,0.999,0.998,0.991,0.974,0.966,0.995,0.998,0.998],[0.999,1.0,0.984,0.975,0.954,0.994,0.998,1.0,0.986,0.973,0.968,0.994,0.997,0.999,0.987,0.966,0.956,0.993,0.996,0.998],[0.989,0.984,1.0,0.998,0.99,0.991,0.99,0.987,1.0,0.998,0.996,0.989,0.99,0.987,0.999,0.995,0.991,0.988,0.991,0.989],[0.983,0.975,0.998,1.0,0.995,0.986,0.984,0.979,0.997,1.0,0.999,0.984,0.985,0.98,0.996,0.998,0.995,0.981,0.985,0.982],[0.965,0.954,0.99,0.995,1.0,0.969,0.966,0.959,0.988,0.995,0.998,0.965,0.967,0.96,0.986,0.997,0.999,0.963,0.968,0.964],[0.997,0.994,0.991,0.986,0.969,1.0,0.998,0.996,0.992,0.984,0.981,0.999,0.998,0.996,0.993,0.978,0.97,0.998,0.997,0.996],[0.999,0.998,0.99,0.984,0.966,0.998,1.0,0.999,0.992,0.983,0.979,0.997,0.999,0.998,0.992,0.976,0.968,0.996,0.999,0.998],[0.999,1.0,0.987,0.979,0.959,0.996,0.999,1.0,0.989,0.978,0.973,0.996,0.999,1.0,0.99,0.971,0.961,0.995,0.998,0.999],[0.991,0.986,1.0,0.997,0.988,0.992,0.992,0.989,1.0,0.997,0.995,0.992,0.992,0.99,1.0,0.995,0.99,0.99,0.993,0.992],[0.981,0.973,0.998,1.0,0.995,0.984,0.983,0.978,0.997,1.0,1.0,0.982,0.983,0.979,0.996,0.999,0.997,0.98,0.984,0.981],[0.977,0.968,0.996,0.999,0.998,0.981,0.979,0.973,0.995,1.0,1.0,0.979,0.979,0.974,0.994,0.999,0.998,0.977,0.981,0.977],[0.996,0.994,0.989,0.984,0.965,0.999,0.997,0.996,0.992,0.982,0.979,1.0,0.997,0.996,0.992,0.976,0.968,1.0,0.997,0.996],[0.999,0.997,0.99,0.985,0.967,0.998,0.999,0.999,0.992,0.983,0.979,0.997,1.0,0.999,0.994,0.978,0.97,0.996,0.999,0.999],[0.998,0.999,0.987,0.98,0.96,0.996,0.998,1.0,0.99,0.979,0.974,0.996,0.999,1.0,0.991,0.972,0.963,0.995,0.998,1.0],[0.991,0.987,0.999,0.996,0.986,0.993,0.992,0.99,1.0,0.996,0.994,0.992,0.994,0.991,1.0,0.994,0.989,0.991,0.994,0.993],[0.974,0.966,0.995,0.998,0.997,0.978,0.976,0.971,0.995,0.999,0.999,0.976,0.978,0.972,0.994,1.0,0.999,0.974,0.979,0.976],[0.966,0.956,0.991,0.995,0.999,0.97,0.968,0.961,0.99,0.997,0.998,0.968,0.97,0.963,0.989,0.999,1.0,0.966,0.972,0.967],[0.995,0.993,0.988,0.981,0.963,0.998,0.996,0.995,0.99,0.98,0.977,1.0,0.996,0.995,0.991,0.974,0.966,1.0,0.997,0.996],[0.998,0.996,0.991,0.985,0.968,0.997,0.999,0.998,0.993,0.984,0.981,0.997,0.999,0.998,0.994,0.979,0.972,0.997,1.0,0.999],[0.998,0.998,0.989,0.982,0.964,0.996,0.998,0.999,0.992,0.981,0.977,0.996,0.999,1.0,0.993,0.976,0.967,0.996,0.999,1.0]],""K"":1,""R"":0.988,""featValue"":[19.768,0.201,0.014,0.007,0.005,0.003,0.002,0.001,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],""featVec"":[[-0.224,-0.186,0.145,0.393,-0.223,-0.173,-0.261,-0.289,-0.04,-0.308,0.161,0.034,-0.113,-0.241,-0.407,-0.189,0.195,0.263,-0.024,0.063],[-0.223,-0.269,0.334,0.201,0.114,-0.295,-0.183,0.25,0.079,-0.312,-0.097,0.01,0.159,-0.016,0.237,0.244,-0.201,-0.372,-0.16,-0.268],[-0.224,0.116,0.059,0.031,0.476,-0.212,0.068,-0.437,0.236,0.048,-0.243,0.133,0.142,0.232,0.123,0.246,0.296,0.283,-0.068,0.085],[-0.224,0.213,0.027,0.221,0.215,0.341,-0.263,0.173,-0.46,-0.119,-0.068,0.222,0.233,0.283,-0.113,-0.002,-0.047,-0.017,0.392,0.109],[-0.221,0.398,0.045,0.309,-0.229,-0.455,0.267,0.024,-0.353,0.359,0.144,0.03,0.067,-0.002,0.178,-0.054,-0.163,0.039,-0.143,0.044],[-0.224,-0.142,-0.373,0.276,0.027,0.124,0.557,0.032,-0.001,-0.19,-0.357,-0.327,0.177,-0.037,-0.202,-0.081,-0.069,0.0,0.024,-0.175],[-0.224,-0.177,0.029,0.264,-0.102,0.387,-0.103,-0.133,0.288,0.388,0.461,-0.286,0.23,0.177,0.065,0.181,-0.066,0.008,-0.008,-0.079],[-0.224,-0.232,0.247,0.031,0.129,0.0,0.151,0.194,0.108,-0.006,-0.04,-0.239,-0.275,0.052,0.229,-0.237,-0.095,0.032,0.152,0.683],[-0.225,0.086,0.029,-0.108,0.361,-0.122,-0.05,-0.299,-0.017,0.184,0.102,-0.163,-0.346,-0.068,-0.095,-0.323,-0.09,-0.375,0.333,-0.352],[-0.224,0.234,0.009,-0.007,0.12,0.356,-0.184,0.051,-0.19,0.019,-0.127,-0.217,-0.104,-0.222,0.139,-0.138,0.36,-0.171,-0.6,0.025],[-0.223,0.28,-0.053,0.096,-0.006,0.044,-0.218,0.333,0.386,0.259,-0.3,0.082,-0.22,-0.375,-0.186,0.228,-0.214,0.221,0.12,-0.041],[-0.224,-0.162,-0.514,0.05,0.115,-0.01,-0.008,0.091,0.013,-0.09,0.24,0.371,-0.441,0.318,-0.027,0.062,-0.176,-0.014,-0.316,0.025],[-0.224,-0.165,0.079,-0.018,-0.25,0.236,0.315,-0.213,-0.046,0.097,-0.057,0.488,-0.077,-0.318,0.109,0.251,0.209,-0.362,0.181,0.106],[-0.224,-0.22,0.239,-0.184,0.04,0.064,0.204,0.379,-0.048,0.106,0.116,0.201,-0.018,0.034,0.124,-0.269,0.28,0.437,0.047,-0.437],[-0.225,0.067,0.067,-0.366,0.2,0.042,0.113,-0.053,0.121,-0.074,0.228,0.217,0.462,-0.257,-0.263,-0.227,-0.377,-0.012,-0.235,0.179],[-0.223,0.301,0.042,-0.269,-0.091,0.11,0.129,-0.114,-0.11,-0.487,0.277,-0.264,-0.193,-0.099,0.216,0.378,-0.134,0.242,0.138,-0.087],[-0.222,0.381,0.001,-0.104,-0.379,-0.081,0.02,0.141,0.453,-0.212,0.011,0.034,0.073,0.381,-0.09,-0.221,0.284,-0.28,0.077,0.017],[-0.224,-0.178,-0.543,-0.208,-0.015,-0.306,-0.287,0.131,-0.077,0.053,0.105,-0.132,0.286,-0.254,0.226,0.02,0.277,-0.015,0.242,0.125],[-0.224,-0.148,-0.03,-0.219,-0.395,0.096,-0.268,-0.34,-0.071,0.056,-0.442,0.035,0.023,0.172,0.272,-0.233,-0.354,0.161,-0.05,-0.096],[-0.224,-0.186,0.164,-0.384,-0.117,-0.152,0.003,0.087,-0.271,0.228,-0.113,-0.229,-0.066,0.244,-0.53,0.365,0.085,-0.069,-0.102,0.075]],""selectVec"":[[-0.224],[-0.223],[-0.224],[-0.224],[-0.221],[-0.224],[-0.224],[-0.224],[-0.225],[-0.224],[-0.223],[-0.224],[-0.224],[-0.224],[-0.225],[-0.223],[-0.222],[-0.224],[-0.224],[-0.224]]},""Model_type"":""PCA"",""BeforeCleanSamNum"":7820,""AfterCleanSamNum"":5190,""CleanOrNot"":true},""alarmmodelset"":{""alarmname"":""负荷大于350"",""alarmcondition"":""[d1_mw]>350""},""copy"":false,""principal"":""1"",""precision"":""98.8%"",""rate"":""0.98"",""iter"":null,""layer"":null,""component"":null,""count"":null,""version1"":""1""}";
+	        string InputInfo = @"{""Model_id"":491,""version"":""v-2025-12-10 17:25:17"",""Test_Data"":[[" + IN1 + "," + IN2 + "," + IN3 + "," + IN4 + "," + IN5 + "," + IN6 + "," + IN7 + "," + IN8 + "," + IN9 + "," + IN10 + "," + IN11 + "," + IN12 + "," + IN13 + "," + IN14 + "," + IN15 + "," + IN16 + "," + IN17 + "," + IN18 + "," + IN19 + "," + IN20 + "]],\"Target_Data\":[[]]}";
+	        string jsonResult = PCA.Diagnosis(ModelInfo, InputInfo, 1, 1);
+			if (string.IsNullOrEmpty(jsonResult)) { return; }
+	        float[][] reconData = PCA.OutputInfo.reconData;
+	        float[][] errorData = PCA.OutputInfo.errorData;
+	        float[][] paraState = PCA.OutputInfo.paraState;
+	        float[] index = PCA.OutputInfo.Index;
+
+	        OUT_R1[0] = reconData[0][0];
+	        OUT_B1[0] = errorData[0][0];
+	        OUT_F1[0] = paraState[0][0];
+	        OUT_R2[0] = reconData[0][1];
+	        OUT_B2[0] = errorData[0][1];
+	        OUT_F2[0] = paraState[0][1];
+	        OUT_R3[0] = reconData[0][2];
+	        OUT_B3[0] = errorData[0][2];
+	        OUT_F3[0] = paraState[0][2];
+	        OUT_R4[0] = reconData[0][3];
+	        OUT_B4[0] = errorData[0][3];
+	        OUT_F4[0] = paraState[0][3];
+	        OUT_R5[0] = reconData[0][4];
+	        OUT_B5[0] = errorData[0][4];
+	        OUT_F5[0] = paraState[0][4];
+	        OUT_R6[0] = reconData[0][5];
+	        OUT_B6[0] = errorData[0][5];
+	        OUT_F6[0] = paraState[0][5];
+	        OUT_R7[0] = reconData[0][6];
+	        OUT_B7[0] = errorData[0][6];
+	        OUT_F7[0] = paraState[0][6];
+	        OUT_R8[0] = reconData[0][7];
+	        OUT_B8[0] = errorData[0][7];
+	        OUT_F8[0] = paraState[0][7];
+	        OUT_R9[0] = reconData[0][8];
+	        OUT_B9[0] = errorData[0][8];
+	        OUT_F9[0] = paraState[0][8];
+	        OUT_R10[0] = reconData[0][9];
+	        OUT_B10[0] = errorData[0][9];
+	        OUT_F10[0] = paraState[0][9];
+	        OUT_R11[0] = reconData[0][10];
+	        OUT_B11[0] = errorData[0][10];
+	        OUT_F11[0] = paraState[0][10];
+	        OUT_R12[0] = reconData[0][11];
+	        OUT_B12[0] = errorData[0][11];
+	        OUT_F12[0] = paraState[0][11];
+	        OUT_R13[0] = reconData[0][12];
+	        OUT_B13[0] = errorData[0][12];
+	        OUT_F13[0] = paraState[0][12];
+	        OUT_R14[0] = reconData[0][13];
+	        OUT_B14[0] = errorData[0][13];
+	        OUT_F14[0] = paraState[0][13];
+	        OUT_R15[0] = reconData[0][14];
+	        OUT_B15[0] = errorData[0][14];
+	        OUT_F15[0] = paraState[0][14];
+	        OUT_R16[0] = reconData[0][15];
+	        OUT_B16[0] = errorData[0][15];
+	        OUT_F16[0] = paraState[0][15];
+	        OUT_R17[0] = reconData[0][16];
+	        OUT_B17[0] = errorData[0][16];
+	        OUT_F17[0] = paraState[0][16];
+	        OUT_R18[0] = reconData[0][17];
+	        OUT_B18[0] = errorData[0][17];
+	        OUT_F18[0] = paraState[0][17];
+	        OUT_R19[0] = reconData[0][18];
+	        OUT_B19[0] = errorData[0][18];
+	        OUT_F19[0] = paraState[0][18];
+	        OUT_R20[0] = reconData[0][19];
+	        OUT_B20[0] = errorData[0][19];
+	        OUT_F20[0] = paraState[0][19];
+	        OUT_ste[0] = index[0];
+
+			LAExWarn[] arrIN = new LAExWarn[20] {IN1,IN2,IN3,IN4,IN5,IN6,IN7,IN8,IN9,IN10,IN11,IN12,IN13,IN14,IN15,IN16,IN17,IN18,IN19,IN20};
+			float[] arrOUT_B = new float[20] {OUT_B1,OUT_B2,OUT_B3,OUT_B4,OUT_B5,OUT_B6,OUT_B7,OUT_B8,OUT_B9,OUT_B10,OUT_B11,OUT_B12,OUT_B13,OUT_B14,OUT_B15,OUT_B16,OUT_B17,OUT_B18,OUT_B19,OUT_B20};
+			LD[] arrOUT_W = new LD[20] { OUT_W1,OUT_W2,OUT_W3,OUT_W4,OUT_W5,OUT_W6,OUT_W7,OUT_W8,OUT_W9,OUT_W10,OUT_W11,OUT_W12,OUT_W13,OUT_W14,OUT_W15,OUT_W16,OUT_W17,OUT_W18,OUT_W19,OUT_W20 };
+			
+	        if (!(Condition1>350))
+			{
+				for (int i = 0; i < arrIN.Length; i++)
+				{
+					StartTime[i] = 0;
+					arrIN[i].active = false;
+					arrOUT_W[i].buffer = false;
+				}
+				return;
+			}
+
+
+			for (int i = 0; i < arrOUT_B.Length; i++)
+			{
+				if (!arrIN[i].Runable || arrIN[i].AlarmType != 0 || arrIN[i].HasConstraint)
+				{
+					arrOUT_W[i].buffer = false;
+					OldTempOUT_W[i] = false;
+					StartTime[i] = -1;
+					continue;
+				}
+				if (arrOUT_B[i] > arrIN[i].WarnUpLimit)
+				{
+					TempOUT_W[i] = true;
+					arrIN[i].LimitAlarmType = 1;
+				}
+				else if (arrOUT_B[i] < arrIN[i].WarnLowLimit)
+				{
+					TempOUT_W[i] = true;
+					arrIN[i].LimitAlarmType = 4;
+				}
+				else
+				{
+					TempOUT_W[i] = false;
+				}
+				if (TempOUT_W[i])
+				{
+					if (!OldTempOUT_W[i] && TempOUT_W[i])
+					{
+						StartTime[i] = ExcuteEngine.cycle * ExcuteEngine.cycleCount;
+					}
+					if (StartTime[i] >= 0 && ExcuteEngine.cycle * ExcuteEngine.cycleCount >= StartTime[i] + arrIN[i].DelayTime * 1000)
+					{
+						StartTime[i] = -1;
+						arrOUT_W[i].buffer = true;
+						UnAck = true;
+						arrIN[i].active = true;
+						arrIN[i].unAck = true;
+					}
+				}
+				else
+				{
+					arrIN[i].active = false;
+					arrOUT_W[i].buffer = false;
+					StartTime[i] = -1;
+				}
+				OldTempOUT_W[i] = TempOUT_W[i];
+			}
+			WarnActive = false;
+			for (int i = 0; i < arrOUT_W.Length; i++)
+			{
+				WarnActive |= arrOUT_W[i].buffer;
+			}
+
+			if (!WarnActive && !UnAck)
+			{
+				WarnState = 1;
+			}
+			else if (!WarnActive && UnAck) 
+			{
+				WarnState = 2; 
+			}
+			else if (WarnActive && !UnAck) 
+			{
+				WarnState = 4; 
+			}
+			else if (WarnActive && UnAck) 
+			{
+				WarnState = 8; 
+			}
+	    }
+    }
+}
