@@ -3,6 +3,7 @@ using DCSType;
 using EngineCore.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 using OfficeOpenXml;
@@ -99,12 +100,27 @@ namespace TDServer.Service
         }
 
 
+        /// <summary>
+        /// 确认指定故障算法块的报警。
+        /// </summary>
+        /// <param name="algName">实时故障列表中的算法块实例名称（Source）。</param>
+        /// <returns>成功返回200；空名称返回400；目标不存在或不支持确认返回404。</returns>
+        [HttpPost]
+        public IActionResult SetFaultOutFcAck([FromQuery] string algName)
+        {
+            if (string.IsNullOrWhiteSpace(algName)) return BadRequest("算法块名称不能为空。");
+            bool result = ExcuteEngine.SetFaultOutFcAck(algName);
+            return result ? Ok("OK") : NotFound("故障报警块不存在或不支持确认。");
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> SetWarnFcAck([FromQuery] string algName)
         {
             bool result = ExcuteEngine.SetWarnFcAck(algName);
             return Ok(result ? "OK" : "fail");
         }
+
 
         [HttpPost]
         public async Task<IActionResult> UpdateWarnPoint([FromBody] WarnPointUpdateInfo warnPointUpdateInfo)
@@ -154,6 +170,47 @@ namespace TDServer.Service
             var result = ExcuteEngine.GetSuspendedAlarmPoints(alarmType);
             return Ok(result);
         }
+
+        /// <summary>
+        /// 按故障码挂起或解除挂起；挂起后实时报警不返回，新发生的报警不入库。
+        /// </summary>
+        /// <param name="faultCode">需要设置的故障码。</param>
+        /// <param name="status">1表示挂起，0表示解除挂起；参数必须提供。</param>
+        /// <returns>成功返回200；参数错误返回400；故障码不存在返回404；保存失败返回500。</returns>
+        [HttpPost]
+        public IActionResult SetFaultSuspended(
+            [FromQuery, BindRequired] int faultCode, [FromQuery, BindRequired] int status)
+        {
+            if (status != 0 && status != 1) return BadRequest("挂起状态只能为0或1。");
+            try
+            {
+                return ExcuteEngine.SetFaultSuspended(faultCode, status)
+                    ? Ok("OK") : NotFound("故障码不存在。");
+            }
+            catch (Exception)
+            {
+                return Problem("设置故障挂起状态失败。", statusCode: 500);
+            }
+        }
+
+
+        /// <summary>
+        /// 查询已挂起的故障码和描述，供前端展示及解除挂起。
+        /// </summary>
+        /// <returns>成功返回200及列表，查询失败返回500。</returns>
+        [HttpGet]
+        public IActionResult GetSuspendedFaultCode()
+        {
+            try
+            {
+                return Ok(ExcuteEngine.GetSuspendedFaultCode());
+            }
+            catch (Exception)
+            {
+                return Problem("查询挂起故障码失败。", statusCode: 500);
+            }
+        }
+
 
 
         [HttpPost]

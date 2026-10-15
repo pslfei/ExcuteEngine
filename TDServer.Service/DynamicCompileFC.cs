@@ -357,7 +357,7 @@ namespace TDServer.Service
                     outPinCount = modelInfo.pointInfo.Count;
                     for (int i = 0; i < modelInfo.pointInfo.Count; i++)
                     {
-                        Test_Data += "\"" + $" + IN{i + 1} + " + "\"" + ",";
+                        Test_Data += "\"" + $" + IN{i + 1}.buffer.ToString(System.Globalization.CultureInfo.InvariantCulture) + " + "\"" + ",";
                     }
 
                     for (int i = 0; i < modelInfo.pointInfo.Count; i++)
@@ -392,7 +392,8 @@ namespace TDServer.Service
                     }
 
                     strDiagnosisData += $"string jsonResult = {algorithmName}.Diagnosis(ModelInfo, InputInfo, 1, 1);\n";
-                    strDiagnosisData += $"\t\t\tif (string.IsNullOrEmpty(jsonResult)) {{ return; }}\n";
+                    strDiagnosisData += $"\t\t\tif (string.IsNullOrEmpty(jsonResult)) {{ throw new InvalidOperationException(\"PCA诊断失败，模型：{fcName}\"); }}\n";
+                    strDiagnosisData += $"\t\t\tPCA.Output_Info diagnosisResult = PCA.GetOutputInfo(jsonResult);\n";
 
                     strSetOutputValue += "OUT_ste[0] = index[0];\n";
                     delayOutputValue += $"\t\t\tLAExWarn[] arrIN = new LAExWarn[{modelInfo.pointInfo.Count}] {{{strIN.TrimEnd(',')}}};\n";
@@ -490,10 +491,20 @@ namespace TDServer.Service
                 Test_Data = Test_Data.TrimEnd(',');
                 Target_Data = Target_Data.TrimEnd(',');
 
-                strDiagnosisData += $"	        float[][] reconData = {algorithmName}.OutputInfo.reconData;\n";
-                strDiagnosisData += $"	        float[][] errorData = {algorithmName}.OutputInfo.errorData;\n";
-                strDiagnosisData += $"	        float[][] paraState = {algorithmName}.OutputInfo.paraState;\n";
-                strDiagnosisData += $"	        float[] index = {algorithmName}.OutputInfo.Index;\n";
+                if (algorithmName == "PCA")
+                {
+                    strDiagnosisData += $"	        float[][] reconData = diagnosisResult.reconData;\n";
+                    strDiagnosisData += $"	        float[][] errorData = diagnosisResult.errorData;\n";
+                    strDiagnosisData += $"	        float[][] paraState = diagnosisResult.paraState;\n";
+                    strDiagnosisData += $"	        float[] index = diagnosisResult.Index;\n";
+                }
+                else
+                {
+                    strDiagnosisData += $"	        float[][] reconData = {algorithmName}.OutputInfo.reconData;\n";
+                    strDiagnosisData += $"	        float[][] errorData = {algorithmName}.OutputInfo.errorData;\n";
+                    strDiagnosisData += $"	        float[][] paraState = {algorithmName}.OutputInfo.paraState;\n";
+                    strDiagnosisData += $"	        float[] index = {algorithmName}.OutputInfo.Index;\n";
+                }
 
                 strFCCode += "using System;\n";
                 strFCCode += "using System.Reflection;\n";

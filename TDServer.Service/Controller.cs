@@ -5,6 +5,7 @@ using DCSType;
 using EngineCore;
 using EngineCore.Models;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -20,9 +21,9 @@ namespace TDServer.Service
 
         public int ID;
         public List<CldFcblock> CldFcblockList;
-        public Dictionary<string, Function> FunctionInstanceDict;
+        public ConcurrentDictionary<string, Function> FunctionInstanceDict;
         public Dictionary<string, List<string>> AckDict;
-        public Dictionary<string, FaultInfo> FaultInfoList;
+        public ConcurrentDictionary<string, FaultInfo> FaultInfoList;
         public Dictionary<string, LA> HealthScoreDict;
         public Dictionary<string, AlarmWarnInfo> AlarmWarnInfoDict;
         public Dictionary<string, Dictionary<string, List<string>>> UsedPointsByFc;
@@ -33,6 +34,19 @@ namespace TDServer.Service
         private readonly HttpClient client = new HttpClient();
         private string mysqlconn = string.Empty;
         private static readonly LoggerService<Controller> logger = new LoggerService<Controller>();
+
+        private readonly List<FaultEvent> pendingFaultEvents = new List<FaultEvent>();
+        internal readonly object runSync = new object();
+        private readonly object faultCommitSync = new object();
+
+        /// <summary>
+        /// 待提交的故障边沿事件，保留原始时间以支持按顺序重试。
+        /// </summary>
+        /// <param name="FaultCode">故障码。</param>
+        /// <param name="Source">产生事件的算法块实例名称。</param>
+        /// <param name="Active">true表示发生报警，false表示报警恢复。</param>
+        /// <param name="Time">事件进入待写队列的时间。</param>
+        internal sealed record FaultEvent(int FaultCode, string Source, bool Active, DateTime Time);
 
         //public Dictionary<string,List<string>> warnPointByAlgName = new Dictionary<string, List<string>>();
 
@@ -71,6 +85,11 @@ namespace TDServer.Service
             /// 故障回写点名
             /// </summary>
             public string PointName { get; set; } = "";
+
+            /// <summary>
+            /// 报警状态
+            /// </summary>
+            public int AlarmState { get; set; } = 0;
         }
 
         public class AlarmWarnInfo
@@ -88,6 +107,20 @@ namespace TDServer.Service
 
         #region 构造函数
 
+        /// <summary>注册算法块，重复名称仍作为配置错误报告。</summary>
+        private void AddFunctionInstance(string name, Function function)
+        {
+            if (!FunctionInstanceDict.TryAdd(name, function))
+                throw new InvalidOperationException($"算法块实例重复：{name}");
+        }
+
+        /// <summary>注册故障状态，重复名称仍作为配置错误报告。</summary>
+        private void AddFaultInfo(string name, FaultInfo info)
+        {
+            if (!FaultInfoList.TryAdd(name, info))
+                throw new InvalidOperationException($"故障状态重复：{name}");
+        }
+
         public Controller(int controllerID, string conn)
         {
             InitializeFields(controllerID, conn);
@@ -101,9 +134,9 @@ namespace TDServer.Service
             UsedPointsByFc = new Dictionary<string, Dictionary<string, List<string>>>();
             HealthScoreDict = new Dictionary<string, LA>();
             AlarmWarnInfoDict = new Dictionary<string, AlarmWarnInfo>(StringComparer.OrdinalIgnoreCase);
-            FaultInfoList = new Dictionary<string, FaultInfo>();
+            FaultInfoList = new ConcurrentDictionary<string, FaultInfo>();
             CldFcblockList = new List<CldFcblock>();
-            FunctionInstanceDict = new Dictionary<string, Function>(StringComparer.OrdinalIgnoreCase);
+            FunctionInstanceDict = new ConcurrentDictionary<string, Function>(StringComparer.OrdinalIgnoreCase);
             secondCalcPinValueList = new Dictionary<string, Dictionary<string, object>>();
             dSystemList = new List<DSystem>();
             calculatedLAList = new Dictionary<string, List<CalculatedLA>>();
@@ -133,7 +166,23 @@ namespace TDServer.Service
 
         #region 主要运行方法
 
+        /// <summary>
+        /// 串行执行本控制器周期及重新初始化，不占用全局故障状态锁。
+        /// </summary>
         public void Run()
+        {
+            lock (runSync)
+            {
+                // 初始化完成后，已被替换的旧控制器不能再执行延迟排队的周期。
+                if (controllerList != null && !Volatile.Read(ref controllerList).Contains(this)) return;
+                RunCore();
+            }
+        }
+
+        /// <summary>
+        /// 执行算法块、同步报警状态并处理入库；调用方须持有本控制器的runSync锁。
+        /// </summary>
+        private void RunCore()
         {
             try
             {
@@ -142,7 +191,7 @@ namespace TDServer.Service
                     // 执行健康功能实例
                     foreach (var healthFunctionInstance in FunctionInstanceDict)
                     {
-                        healthFunctionInstance.Value.Implement(null);
+                        lock (healthFunctionInstance.Value) healthFunctionInstance.Value.Implement(null);
                     }
 
                     // 计算系统健康度得分
@@ -162,10 +211,6 @@ namespace TDServer.Service
                     // 执行功能块实例
                     foreach (var functionBlockInstance in FunctionInstanceDict)
                     {
-                        if (functionBlockInstance.Key.Contains("ANN390"))
-                        {
-
-                        }
                         string algName = functionBlockInstance.Key;
                         ExecuteSingleFunctionBlock(functionBlockInstance, algName);
                     }
@@ -251,7 +296,7 @@ namespace TDServer.Service
         {
             try
             {
-                functionBlockInstance.Value.Implement(null);
+                lock (functionBlockInstance.Value) functionBlockInstance.Value.Implement(null);
 
                 if (functionBlockInstance.Value.FcType == Function.enumType.ICO)
                 {
@@ -263,6 +308,7 @@ namespace TDServer.Service
             catch (Exception ex)
             {
                 // 处理异常但不抛出，保证其他功能块继续执行
+                logger.ErrorLog($"控制器 {ID} 执行功能块 {algName} 失败。", ex);
             }
         }
 
@@ -965,7 +1011,7 @@ namespace TDServer.Service
                 functionInstance.Runable = cldFcblock.InstantStatus == 1;
             }
 
-            FunctionInstanceDict.Add(algName, functionInstance);
+            AddFunctionInstance(algName, functionInstance);
             return true;
         }
 
@@ -1160,7 +1206,7 @@ namespace TDServer.Service
 
             string algName = $"health{dHealthIndicator.IndicatorID}";
             health.InstanceName = algName;
-            FunctionInstanceDict.Add(algName, health);
+            AddFunctionInstance(algName, health);
 
             SetHealthIndicatorOutput(dHealthIndicator, health, algName);
         }
@@ -1189,7 +1235,7 @@ namespace TDServer.Service
 
             string algName = $"health16sel{dHealthIndicator.IndicatorID}";
             health16SEL.InstanceName = algName;
-            FunctionInstanceDict.Add(algName, health16SEL);
+            AddFunctionInstance(algName, health16SEL);
 
             SetHealthIndicatorOutput(dHealthIndicator, health16SEL, algName);
         }
@@ -1222,7 +1268,7 @@ namespace TDServer.Service
 
             string algName = $"healthinterval{indicatorID}";
             healthInterval.InstanceName = algName;
-            FunctionInstanceDict.Add(algName, healthInterval);
+            AddFunctionInstance(algName, healthInterval);
 
             SetHealthIndicatorOutput(dHealthIndicator, healthInterval, algName);
         }
@@ -1351,7 +1397,7 @@ namespace TDServer.Service
                 return false;
             }
 
-            FunctionInstanceDict.Add(devAlarmConfig.InstanceName, devAlarm);
+            AddFunctionInstance(devAlarmConfig.InstanceName, devAlarm);
             FaultInfoList[devAlarmConfig.InstanceName] = new FaultInfo
             {
                 Code = devAlarmConfig.FaultCode,
@@ -1397,7 +1443,7 @@ namespace TDServer.Service
                 return false;
             }
 
-            FunctionInstanceDict.Add(fluctuationAlarmConfig.InstanceName, analogFluctuationAlarm);
+            AddFunctionInstance(fluctuationAlarmConfig.InstanceName, analogFluctuationAlarm);
             AlarmWarnInfoDict[fluctuationAlarmConfig.InstanceName] = new AlarmWarnInfo
             {
                 PointName = fluctuationAlarmConfig.PointName,
@@ -1552,45 +1598,58 @@ namespace TDServer.Service
 
         #region 故障数据处理方法
 
+        /// <summary>
+        /// 扫描故障边沿并提交待写事件，只有数据库提交成功后才清空队列。
+        /// 挂起期间的新报警不入队，已记录报警的恢复仍允许更新结束时间。
+        /// </summary>
+        /// <remarks>数据库操作不持有全局状态锁；失败保留批次，提交期间追加的事件不会被清除。</remarks>
         public void InsertFaultData()
         {
-            var (addFaultDiagnosisList, updateFaultDiagnosisList) = ProcessFaultInfoList();
+            ProcessFaultInfoList();
+            CommitPendingFaultEvents(PersistFaultEvents);
+        }
 
-            if (addFaultDiagnosisList.Count == 0 && updateFaultDiagnosisList.Count == 0)
+        /// <summary>
+        /// 串行提交一个队列快照；回调在全局锁外执行，成功后仅移除已提交的队列前缀。
+        /// </summary>
+        /// <param name="persist">实际数据库提交操作，异常时队列保持不变。</param>
+        internal void CommitPendingFaultEvents(Action<IReadOnlyList<FaultEvent>> persist)
+        {
+            lock (faultCommitSync)
             {
-                return;
-            }
-
-            using (WarnContext warnContext = new WarnContext(configInfo.mysqlConn))
-            {
-                if (addFaultDiagnosisList.Count > 0)
-                {
-                    warnContext.FaultDiagnosis.AddRange(addFaultDiagnosisList);
-                }
-
-                if (updateFaultDiagnosisList.Count > 0)
-                {
-                    warnContext.FaultDiagnosis.UpdateRange(updateFaultDiagnosisList);
-                }
-
-                warnContext.SaveChanges();
-                faultDiagnosisList = warnContext.FaultDiagnosis.ToList();
+                FaultEvent[] batch;
+                lock (FaultAlarmSync) batch = pendingFaultEvents.ToArray();
+                if (batch.Length == 0) return;
+                persist(batch);
+                lock (FaultAlarmSync) pendingFaultEvents.RemoveRange(0, batch.Length);
             }
         }
 
         /// <summary>
-        /// 处理故障信息列表
+        /// 在全局状态锁外查询活动记录并提交事件批次，保留EF对结束时间的变更跟踪。
         /// </summary>
-        private (List<FaultDiagnosis> addList, List<FaultDiagnosis> updateList) ProcessFaultInfoList()
+        /// <param name="events">本次独立提交的事件快照。</param>
+        private static void PersistFaultEvents(IReadOnlyList<FaultEvent> events)
         {
-            List<FaultDiagnosis> addFaultDiagnosisList = new List<FaultDiagnosis>();
-            List<FaultDiagnosis> updateFaultDiagnosisList = new List<FaultDiagnosis>();
+            using var warnContext = new WarnContext(configInfo.mysqlConn);
+            var codes = events.Select(x => x.FaultCode).Distinct().ToList();
+            var openRecords = warnContext.FaultDiagnosis
+                .Where(x => codes.Contains(x.FaultCode) && x.EndTime == DateTime.MinValue).ToList();
+            warnContext.FaultDiagnosis.AddRange(ApplyFaultEvents(openRecords, events));
+            warnContext.SaveChanges();
+        }
 
+        /// <summary>
+        /// 扫描本控制器所有故障块并同步内存状态，单个块处理失败不阻止其他块扫描。
+        /// 各块使用自身锁读取输出，仅在同步内存状态与入队时短暂持有全局锁。
+        /// </summary>
+        private void ProcessFaultInfoList()
+        {
             foreach (var item in FaultInfoList)
             {
                 try
                 {
-                    ProcessSingleFaultInfo(item, addFaultDiagnosisList, updateFaultDiagnosisList);
+                    ProcessSingleFaultInfo(item);
                 }
                 catch (Exception ex)
                 {
@@ -1598,46 +1657,59 @@ namespace TDServer.Service
                 }
             }
 
-            return (addFaultDiagnosisList, updateFaultDiagnosisList);
         }
 
         /// <summary>
-        /// 处理单个故障信息
+        /// 同步单个故障块的状态，并将需记录的发生或恢复事件加入重试队列。
+        /// 被挂起抑制的发生事件直接消费，不在解除挂起后追溯补录。
         /// </summary>
-        private void ProcessSingleFaultInfo(KeyValuePair<string, FaultInfo> faultItem,
-            List<FaultDiagnosis> addList, List<FaultDiagnosis> updateList)
+        /// <param name="faultItem">算法块实例名称及其对应的故障状态。</param>
+        private void ProcessSingleFaultInfo(KeyValuePair<string, FaultInfo> faultItem)
         {
             string algName = faultItem.Key;
-            if (!FunctionInstanceDict.ContainsKey(algName))
+            if (!FunctionInstanceDict.TryGetValue(algName, out var function)) return;
+            // 首次数据库加载须在全局锁外完成，正常运行时为缓存读取。
+            EnsureFaultSuspensionsReady();
+            lock (function)
             {
-                return;
-            }
+                var (outValue, needOutValue, faultCodeValue, alarmStateValue) = GetFunctionOutputValues(function);
+                string sourceName = string.IsNullOrWhiteSpace(function.InstanceName) ? algName : function.InstanceName;
 
-            Function function = FunctionInstanceDict[algName];
-            var (outValue, needOutValue, faultCodeValue) = GetFunctionOutputValues(function);
-            string sourceName = string.IsNullOrWhiteSpace(function.InstanceName) ? algName : function.InstanceName;
+                lock (FaultAlarmSync)
+                {
+                    if (!FunctionInstanceDict.TryGetValue(algName, out var current) || !ReferenceEquals(current, function)
+                        || !FaultInfoList.TryGetValue(algName, out var currentInfo)
+                        || !ReferenceEquals(currentInfo, faultItem.Value)) return;
+                    bool changed = faultItem.Value.Status != outValue;
+                    bool suspended = IsFaultSuspended(faultCodeValue);
+                    DateTime eventTime = DateTime.Now;
+                    if (changed && outValue == 1)
+                        faultItem.Value.Time = eventTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    faultItem.Value.Status = outValue;
+                    faultItem.Value.AlarmState = alarmStateValue;
+                    faultItem.Value.Code = faultCodeValue;
+                    faultItem.Value.Source = sourceName;
 
+                    if (changed || needOutValue)
+                    {
+                        // 挂起只抑制新报警；已入库报警的恢复仍需闭合。
+                        if (outValue == 0 || !suspended)
+                            pendingFaultEvents.Add(new FaultEvent(faultCodeValue, sourceName, outValue == 1, eventTime));
 
-            if (FaultInfoList[algName].Status == 0 && outValue == 1)
-            {
-                FaultInfoList[algName].Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            }
-            FaultInfoList[algName].Status = outValue;
-
-            if (needOutValue)
-            {
-                ProcessFaultOutput(sourceName, outValue, faultCodeValue, addList, updateList);
-
-                //重置NeedOut标志
-                FieldInfo needOutPin = function.GetType().GetField("NeedOut");
-                needOutPin?.SetValue(function, false);
+                        // 入队后可消费块标志，持久化失败仍由队列负责重试。
+                        function.GetType().GetField("NeedOut")?.SetValue(function, false);
+                    }
+                }
             }
         }
 
         /// <summary>
-        /// 获取功能输出值
+        /// 读取故障块的输出、事件标记、故障码和报警状态。
+        /// 未实现统一报警接口的旧块按实际输出映射为正常或活动已确认状态。
         /// </summary>
-        private (int outValue, bool needOutValue, int faultCodeValue) GetFunctionOutputValues(Function function)
+        /// <param name="function">待读取的算法块实例。</param>
+        /// <returns>活动标记（0/1）、待处理事件标记、故障码及报警状态。</returns>
+        private (int outValue, bool needOutValue, int faultCodeValue, int alarmStateValue) GetFunctionOutputValues(Function function)
         {
             FieldInfo needOutPin = function.GetType().GetField("NeedOut");
             FieldInfo outPin = function.GetType().GetField("OUT");
@@ -1645,37 +1717,75 @@ namespace TDServer.Service
 
             object obj = outPin?.GetValue(function);
             int outValue = obj != null && ((LD)obj).buffer ? 1 : 0;
-
             bool needOutValue = needOutPin != null && (bool)needOutPin.GetValue(function);
             int faultCodeValue = faultCodePin != null ? (int)faultCodePin.GetValue(function) : 0;
 
-            return (outValue, needOutValue, faultCodeValue);
+            byte alarmStateValue = function is IFaultAlarm alarm
+                ? alarm.AlarmState
+                : (byte)(outValue == 1 ? 4 : 1);
+            return (outValue, needOutValue, faultCodeValue, alarmStateValue);
         }
 
         /// <summary>
-        /// 处理故障输出
+        /// 按队列顺序将故障事件合并到报警记录，不在此方法中执行数据库提交。
+        /// 发生事件复用同码同来源的活动记录；恢复事件只结束尚未结束的记录。
         /// </summary>
-        private void ProcessFaultOutput(string sourceName, int outValue, int faultCodeValue,
-            List<FaultDiagnosis> addList, List<FaultDiagnosis> updateList)
+        /// <param name="openRecords">已加载的记录集合；方法会更新结束时间并加入新记录。</param>
+        /// <param name="events">按发生顺序排列的待写事件。</param>
+        /// <returns>需要通过DbContext新增的记录；既有记录由变更跟踪保存。</returns>
+        internal static List<FaultDiagnosis> ApplyFaultEvents(
+            List<FaultDiagnosis> openRecords, IReadOnlyList<FaultEvent> events)
         {
-            if (outValue == 1)
+            var added = new List<FaultDiagnosis>();
+            foreach (var faultEvent in events)
             {
-                // 添加新故障
-                addList.Add(new FaultDiagnosis()
+                var open = openRecords.Where(x => x.FaultCode == faultEvent.FaultCode
+                        && x.Source == faultEvent.Source && x.EndTime == DateTime.MinValue)
+                    .OrderByDescending(x => x.BeginTime).FirstOrDefault();
+                if (faultEvent.Active)
                 {
-                    FaultCode = faultCodeValue,
-                    BeginTime = DateTime.Now,
-                    Source = sourceName
-                });
+                    if (open != null) continue;
+                    var record = new FaultDiagnosis
+                    {
+                        FaultCode = faultEvent.FaultCode,
+                        Source = faultEvent.Source,
+                        BeginTime = faultEvent.Time
+                    };
+                    openRecords.Add(record);
+                    added.Add(record);
+                }
+                else if (open != null)
+                {
+                    open.EndTime = faultEvent.Time < open.BeginTime ? open.BeginTime : faultEvent.Time;
+                }
             }
-            else
+            return added;
+        }
+
+        /// <summary>
+        /// 在解除挂起后同步对应故障块；仍活动的故障从解除后的时间开始记录。
+        /// 已恢复故障不补录，已有活动记录的重复开始事件由合并逻辑消除。
+        /// </summary>
+        /// <param name="faultCode">已解除挂起的故障码。</param>
+        /// <remarks>在全局锁外调用，按块同步状态，再短暂加锁入队。</remarks>
+        internal void OnFaultResumed(int faultCode)
+        {
+            foreach (var item in FaultInfoList.Where(x => x.Value.Code == faultCode))
             {
-                // 更新故障结束时间
-                FaultDiagnosis faultDiagnosis = faultDiagnosisList.LastOrDefault(x => x.FaultCode == faultCodeValue && x.Source == sourceName);
-                if (faultDiagnosis != null)
+                // 先同步真实状态，处理尚未进入本周期扫描的边沿。
+                bool wasActive;
+                lock (FaultAlarmSync) wasActive = item.Value.Status == 1;
+                ProcessSingleFaultInfo(item);
+                if (!FunctionInstanceDict.TryGetValue(item.Key, out var function)) continue;
+                string source = string.IsNullOrWhiteSpace(function.InstanceName) ? item.Key : function.InstanceName;
+                DateTime resumedAt = DateTime.Now;
+                lock (FaultAlarmSync)
                 {
-                    faultDiagnosis.EndTime = DateTime.Now;
-                    updateList.Add(faultDiagnosis);
+                    if (!wasActive || item.Value.Status != 1 || IsFaultSuspended(faultCode)) continue;
+                    if (!FunctionInstanceDict.TryGetValue(item.Key, out var current) || !ReferenceEquals(current, function)
+                        || !FaultInfoList.TryGetValue(item.Key, out var currentInfo)
+                        || !ReferenceEquals(currentInfo, item.Value)) continue;
+                    pendingFaultEvents.Add(new FaultEvent(faultCode, source, true, resumedAt));
                 }
             }
         }
@@ -1827,7 +1937,7 @@ namespace TDServer.Service
                 // 1. 移除功能实例
                 if (FunctionInstanceDict.ContainsKey(algName))
                 {
-                    FunctionInstanceDict.Remove(algName);
+                    FunctionInstanceDict.TryRemove(algName, out _);
                     hasRemoved = true;
                 }
 
@@ -1840,7 +1950,7 @@ namespace TDServer.Service
                 // 3. 移除故障信息
                 if (FaultInfoList.ContainsKey(algName))
                 {
-                    FaultInfoList.Remove(algName);
+                    FaultInfoList.TryRemove(algName, out _);
                 }
 
                 //// 4. 移除性能计算输出
@@ -1945,6 +2055,15 @@ namespace TDServer.Service
         /// </summary>
         /// <param name="sheetid">工作表ID</param>
         public void ReinitializeSheetIncremental(int sheetid)
+        {
+            lock (runSync) ReinitializeSheetIncrementalCore(sheetid);
+        }
+
+        /// <summary>
+        /// 增量重建工作表中有变化的算法块及连接，调用方须持有本控制器的runSync锁。
+        /// </summary>
+        /// <param name="sheetid">需要重新初始化的工作表ID。</param>
+        private void ReinitializeSheetIncrementalCore(int sheetid)
         {
             try
             {
@@ -2186,7 +2305,7 @@ namespace TDServer.Service
             }
 
             // 添加到实例字典
-            FunctionInstanceDict.Add(algName, functionInstance);
+            AddFunctionInstance(algName, functionInstance);
         }
 
 
@@ -2204,10 +2323,10 @@ namespace TDServer.Service
             //// 如果是重新初始化预警模型，要先删除
             //if (!string.IsNullOrEmpty(fcBlock.InstantInfo) && FunctionInstanceDict.ContainsKey(algName))
             //{
-            //    FunctionInstanceDict.Remove(algName);
+            //    FunctionInstanceDict.TryRemove(algName, out _);
             //}
 
-            FunctionInstanceDict.Remove(algName);//下装时，移除已经实例化内容，重新实例化，防止输入管脚的连接点删除后之前的信息还存在
+            FunctionInstanceDict.TryRemove(algName, out _);//下装时，移除已经实例化内容，重新实例化，防止输入管脚的连接点删除后之前的信息还存在
 
 
             // 如果实例已存在则跳过
@@ -2229,7 +2348,7 @@ namespace TDServer.Service
             }
 
             // 添加到实例字典
-            FunctionInstanceDict.Add(algName, functionInstance);
+            AddFunctionInstance(algName, functionInstance);
         }
 
         #endregion
@@ -2365,7 +2484,7 @@ namespace TDServer.Service
 
                 if (curFunctionInstance.FcType == Function.enumType.FaultOut && cldFcparameter.Name == "FaultCode" && !FaultInfoList.ContainsKey(algName))
                 {
-                    FaultInfoList.Add(algName, new FaultInfo
+                    AddFaultInfo(algName, new FaultInfo
                     {
                         Code = Convert.ToInt32(cldFcparameter.Pvalue),
                         Desc = cldFcblock.Description ?? "",
@@ -2422,7 +2541,7 @@ namespace TDServer.Service
             }
             else
             {
-                FaultInfoList.Add(algName, new FaultInfo
+                AddFaultInfo(algName, new FaultInfo
                 {
                     Desc = cldFcblock.Description,
                     Source = cldFcblock.AlgName,

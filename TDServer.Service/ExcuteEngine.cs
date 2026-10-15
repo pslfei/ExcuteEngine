@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Data;
 using System.Reflection;
 using System.Text;
@@ -69,7 +70,7 @@ namespace TDServer.Service
 
         private static LoggerService<ExcuteEngine> logger = new LoggerService<ExcuteEngine>();
 
-        
+
         public static ConcurrentDictionary<string, object> RTDDict_Rule;
         public static ConcurrentDictionary<string, List<object>> RTDDict;
         public static Dictionary<string, string> WarnRTableDict;//预警点重构表
@@ -123,6 +124,47 @@ namespace TDServer.Service
         public static List<WarnAlarm> warnAlarmList = new List<WarnAlarm>();
 
         public static List<FaultDiagnosis> faultDiagnosisList = new List<FaultDiagnosis>();
+
+        // 只保护故障状态快照、缓存发布与事件队列，不保护计算或数据库I/O。
+        internal static readonly object FaultAlarmSync = new object();
+        private static readonly object faultSuspensionWriteSync = new object();
+        private static readonly object modelLifecycleSync = new object();
+        private static HashSet<int>? suspendedFaultCodes;
+
+        /// <summary>
+        /// 查询故障码的已生效挂起状态；缓存未加载时先读取数据库。
+        /// </summary>
+        /// <param name="faultCode">待查询的故障码。</param>
+        /// <returns>故障码已挂起时返回true，否则返回false。</returns>
+        /// <remarks>加载失败向调用方传播，不降级为全部未挂起。</remarks>
+        internal static bool IsFaultSuspended(int faultCode)
+        {
+            EnsureFaultSuspensionsLoaded();
+            return Volatile.Read(ref suspendedFaultCodes)!.Contains(faultCode);
+        }
+
+        /// <summary>
+        /// 在进入块锁或全局状态锁之前完成挂起缓存准备，避免首次数据库查询进入临界区。
+        /// </summary>
+        internal static void EnsureFaultSuspensionsReady() => EnsureFaultSuspensionsLoaded();
+
+        /// <summary>
+        /// 首次加载已挂起故障码；后续调用复用缓存，初始化时可重置并重新加载。
+        /// </summary>
+        /// <remarks>查询只持有独立的挂起写锁；完整读取成功后发布只读快照，失败保留旧缓存。</remarks>
+        private static void EnsureFaultSuspensionsLoaded(bool forceReload = false)
+        {
+            if (!forceReload && Volatile.Read(ref suspendedFaultCodes) != null) return;
+            lock (faultSuspensionWriteSync)
+            {
+                if (!forceReload && Volatile.Read(ref suspendedFaultCodes) != null) return;
+                using var context = new WarnContext(configInfo.mysqlConn);
+                var loaded = context.Troubleshooting.AsNoTracking()
+                    .Where(x => x.IsAlarmSuspended == 1 && x.Code.HasValue)
+                    .Select(x => x.Code!.Value).ToHashSet();
+                lock (FaultAlarmSync) Volatile.Write(ref suspendedFaultCodes, loaded);
+            }
+        }
 
         public static List<parawarns> parawarnsList = new List<parawarns>();
 
@@ -247,7 +289,37 @@ namespace TDServer.Service
             return (false, string.Empty);
         }
 
+        /// <summary>
+        /// 使用生命周期锁初始化引擎并重新加载挂起缓存，不长期占用全局故障状态锁。
+        /// </summary>
         public static void Initial()
+        {
+            lock (modelLifecycleSync)
+            {
+                hasRun = false;
+                var previousControllers = controllerList?.ToArray() ?? Array.Empty<Controller>();
+                int acquired = 0;
+                try
+                {
+                    // 等已有周期结束后再重建共享系统点；此等待不占用故障状态锁。
+                    foreach (var controller in previousControllers)
+                    {
+                        Monitor.Enter(controller.runSync);
+                        acquired++;
+                    }
+                    InitialCore();
+                }
+                finally
+                {
+                    while (acquired > 0) Monitor.Exit(previousControllers[--acquired].runSync);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 加载系统点、挂起状态、算法程序集及控制器；调用方须持有生命周期锁。
+        /// </summary>
+        private static void InitialCore()
         {
             engineStartTime = DateTime.Now;
             cycle = configInfo.RunCycle;
@@ -258,7 +330,6 @@ namespace TDServer.Service
             //ruleWarnPoint = new List<LAExWarn>();
 
             fcTypeDict = new Dictionary<string, Function>();
-            controllerList = new List<Controller>();
             //WarnTableDict = new Dictionary<string, string>();
             WarnRTableDict = new Dictionary<string, string>();
 
@@ -275,6 +346,8 @@ namespace TDServer.Service
 
             //LoadWriteBackPoints();
             InitSystemPoint();
+
+            EnsureFaultSuspensionsLoaded(forceReload: true);
 
             LoadDll();
 
@@ -1680,10 +1753,21 @@ namespace TDServer.Service
         }
 
         /// <summary>
-        /// Reloads a specific DLL by its path.
+        /// 在同步边界内重新加载模型程序集及对应工作表，避免与报警处理交错。
         /// </summary>
-        /// <param name="dllPath">The path of the DLL to reload.</param>
+        /// <param name="modelName">模型名称，用于定位程序集和工作表。</param>
+        /// <returns>模型重载流程成功返回true，名称无效、程序集不存在或处理失败返回false。</returns>
         public static bool ReloadModel(string modelName)
+        {
+            lock (modelLifecycleSync) return ReloadModelCore(modelName);
+        }
+
+        /// <summary>
+        /// 执行模型程序集替换及实例更新；调用方须持有生命周期锁。
+        /// </summary>
+        /// <param name="modelName">待重载的模型名称。</param>
+        /// <returns>模型重载流程是否成功。</returns>
+        private static bool ReloadModelCore(string modelName)
         {
             try
             {
@@ -1724,7 +1808,7 @@ namespace TDServer.Service
                     }
 
                     logger.InfoLog($"ReloadModel {modelName}:Excute CreateFcInstance OK");
-  
+
                     ReinitializeSheet(sheetid);
 
                     using (WarnContext warnContext = new WarnContext(configInfo.mysqlConn))
@@ -1743,7 +1827,7 @@ namespace TDServer.Service
                         if (functionToRemove != null)
                         {
                             var keyToRemove = controller.FunctionInstanceDict.FirstOrDefault(x => x.Value == functionToRemove).Key;
-                            controller.FunctionInstanceDict.Remove(keyToRemove);
+                            controller.FunctionInstanceDict.TryRemove(keyToRemove, out _);
                             File.Delete(dllPath);
                             break;
                         }
@@ -2101,11 +2185,11 @@ namespace TDServer.Service
                               Up3: (float?)null, Low3: (float?)null);
 
             float? up1Limit = cldWarnpoint.UpLimit.ToFloatOrNull();
-            float? low1Limit =cldWarnpoint.LowLimit.ToFloatOrNull();
+            float? low1Limit = cldWarnpoint.LowLimit.ToFloatOrNull();
             float? up2Limit = cldWarnpoint.UpUpLimit.ToFloatOrNull();
-            float? low2Limit =cldWarnpoint.LowLowLimit.ToFloatOrNull();
+            float? low2Limit = cldWarnpoint.LowLowLimit.ToFloatOrNull();
             float? up3Limit = cldWarnpoint.Up3Limit.ToFloatOrNull();
-            float? low3Limit =cldWarnpoint.Low3Limit.ToFloatOrNull();
+            float? low3Limit = cldWarnpoint.Low3Limit.ToFloatOrNull();
 
             string pointName = cldWarnpoint.PointName;
 
@@ -2287,7 +2371,7 @@ namespace TDServer.Service
             {
                 if (controllerList[i].ID == HealthControllerID) continue;
 
-                Dictionary<string, Function> fcInstanceDict = controllerList[i].FunctionInstanceDict;
+                var fcInstanceDict = controllerList[i].FunctionInstanceDict;
 
                 for (int j = 0; j < algList.Count; j++)
                 {
@@ -2469,15 +2553,28 @@ namespace TDServer.Service
         }
 
 
+        /// <summary>
+        /// 返回需展示且未挂起的实时故障报警，包括已恢复但尚未确认的报警。
+        /// </summary>
+        /// <returns>独立的故障状态快照，避免序列化期间被运行周期修改。</returns>
         public static List<Controller.FaultInfo> GetFaultList()
         {
-            List<Controller.FaultInfo> tmpList = new List<Controller.FaultInfo>();
-            for (int i = 0; i < controllerList.Count; i++)
+            EnsureFaultSuspensionsLoaded();
+            lock (FaultAlarmSync)
             {
-                List<Controller.FaultInfo> list = controllerList[i].FaultInfoList.Values.ToList().FindAll(x => x.Status == 1);
-                tmpList.AddRange(list);
+                return controllerList.SelectMany(c => c.FaultInfoList.Values)
+                    .Where(x => x.AlarmState > 1 && !suspendedFaultCodes!.Contains(x.Code))
+                    .Select(x => new Controller.FaultInfo
+                    {
+                        Time = x.Time,
+                        Status = x.Status,
+                        AlarmState = x.AlarmState,
+                        Code = x.Code,
+                        Desc = x.Desc,
+                        Source = x.Source,
+                        PointName = x.PointName
+                    }).ToList();
             }
-            return tmpList;
         }
 
         public static Dictionary<string, Dictionary<string, object?>> GetLogicFcPinValue(Dictionary<string, List<string>> fcPins)
@@ -2672,6 +2769,38 @@ namespace TDServer.Service
             //return true;
         }
 
+
+        /// <summary>
+        /// 调用故障块的统一确认入口，并立即同步实时列表的报警状态。
+        /// 块停用时也可确认，不改变真实活动状态或挂起状态。
+        /// </summary>
+        /// <param name="algName">故障算法块实例名称。</param>
+        /// <returns>确认成功返回true；名称无效、块不存在或不支持确认时返回false。</returns>
+        public static bool SetFaultOutFcAck(string algName)
+        {
+            if (string.IsNullOrWhiteSpace(algName)) return false;
+            foreach (var controller in controllerList)
+            {
+                if (!controller.FunctionInstanceDict.TryGetValue(algName, out var function)) continue;
+                if (function is not IFaultAlarm alarm) return false;
+                // 固定锁顺序：先块锁，再短暂取得状态锁；不等待其他模型或数据库提交。
+                lock (function)
+                {
+                    lock (FaultAlarmSync)
+                    {
+                        if (!controller.FunctionInstanceDict.TryGetValue(algName, out var current)
+                            || !ReferenceEquals(current, function)
+                            || !Volatile.Read(ref controllerList).Contains(controller)) return false;
+                        alarm.Ack();
+                        if (controller.FaultInfoList.TryGetValue(algName, out var info))
+                            info.AlarmState = alarm.AlarmState;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         public static Dictionary<string, List<string>>? GetReference(string pointName)
         {
             for (int i = 0; i < controllerList.Count; i++)
@@ -2733,6 +2862,7 @@ namespace TDServer.Service
 
         private static void InitController()
         {
+            var initializedControllers = new List<Controller>();
             using (WarnContext warnContext = new WarnContext(configInfo.mysqlConn))
             {
                 List<PrjController> prjControllerList = warnContext.PrjControllers.ToList();
@@ -2740,7 +2870,7 @@ namespace TDServer.Service
                 foreach (PrjController prjController in prjControllerList)
                 {
                     Controller controller = new Controller(prjController.Id, configInfo.mysqlConn);
-                    controllerList.Add(controller);
+                    initializedControllers.Add(controller);
                 }
 
                 #region 动态初始化健康度控制器
@@ -2750,7 +2880,7 @@ namespace TDServer.Service
                     if (dSystems != null && dSystems.Count > 0)
                     {
                         Controller controllerHealth = new Controller(HealthControllerID, configInfo.mysqlConn);
-                        controllerList.Add(controllerHealth);
+                        initializedControllers.Add(controllerHealth);
 
                         using (WarnContext warnContext2 = new WarnContext(configInfo.mysqlEnergyanalySis))
                         {
@@ -2779,10 +2909,12 @@ namespace TDServer.Service
                 if (alarmConfig != null && alarmConfig.HasData)
                 {
                     Controller controllerAlarm = new Controller(AlarmControllerID, configInfo.mysqlConn);
-                    controllerList.Add(controllerAlarm);
+                    initializedControllers.Add(controllerAlarm);
                 }
                 #endregion
             }
+            // 完整构建后再发布，接口不会遍历正在增长的控制器列表。
+            lock (FaultAlarmSync) Volatile.Write(ref controllerList, initializedControllers);
         }
 
         public static void Run()
@@ -2964,49 +3096,58 @@ namespace TDServer.Service
         /// <returns></returns>
         public static bool SetFunctionConstantCacheValue(string algName, string pinName, string pinValue)
         {
-
-            foreach (var controller in ExcuteEngine.controllerList)
+            foreach (var controller in controllerList)
             {
-                if (controller.FunctionInstanceDict.TryGetValue(algName, out Function funciton))
-                {
-                    FieldInfo fileInfo = funciton.GetType().GetField(pinName);
-                    if (fileInfo != null)
-                    {
-                        bool boolValue;
-                        int intValue;
-                        float floatValue;
-                        object? obj = fileInfo.GetValue(funciton);
+                if (!controller.FunctionInstanceDict.TryGetValue(algName, out var function)) continue;
+                lock (function) return SetFunctionConstantCacheValueCore(function, pinName, pinValue);
+            }
+            return false;
+        }
 
-                        if (obj is LA)
-                        {
-                            if (float.TryParse(pinValue, out floatValue))
-                            {
-                                ((LA)obj).Value = floatValue;
-                                return true;
-                            }
-                        }
-                        if (obj is LD)
-                        {
-                            if (bool.TryParse(pinValue, out boolValue))
-                            {
-                                ((LD)obj).Value = boolValue;
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            if (int.TryParse(pinValue, out intValue))
-                            {
-                                fileInfo.SetValue(funciton, intValue);
-                                return true;
-                            }
-                            else if (float.TryParse(pinValue, out floatValue))
-                            {
-                                fileInfo.SetValue(funciton, floatValue);
-                                return true;
-                            }
-                        }
-                        break;
+        /// <summary>
+        /// 根据管脚类型转换并设置算法块的缓存值，调用方须持有该块的锁。
+        /// </summary>
+        /// <param name="funciton">需要设置缓存值的算法块实例。</param>
+        /// <param name="pinName">需要设置的管脚或字段名称。</param>
+        /// <param name="pinValue">需要转换为目标类型的字符串值。</param>
+        /// <returns>找到目标并成功赋值时返回true，否则返回false。</returns>
+        private static bool SetFunctionConstantCacheValueCore(Function funciton, string pinName, string pinValue)
+        {
+            FieldInfo fileInfo = funciton.GetType().GetField(pinName);
+            if (fileInfo != null)
+            {
+                bool boolValue;
+                int intValue;
+                float floatValue;
+                object? obj = fileInfo.GetValue(funciton);
+
+                if (obj is LA)
+                {
+                    if (float.TryParse(pinValue, out floatValue))
+                    {
+                        ((LA)obj).Value = floatValue;
+                        return true;
+                    }
+                }
+                if (obj is LD)
+                {
+                    if (bool.TryParse(pinValue, out boolValue))
+                    {
+                        ((LD)obj).Value = boolValue;
+                        return true;
+                    }
+                }
+                else
+                {
+                    if (int.TryParse(pinValue, out intValue))
+                    {
+                        fileInfo.SetValue(funciton, intValue);
+                        return true;
+                    }
+                    else if (float.TryParse(pinValue, out floatValue))
+                    {
+                        fileInfo.SetValue(funciton, floatValue);
+                        return true;
                     }
                 }
             }
@@ -4272,6 +4413,130 @@ namespace TDServer.Service
             }).ToList();
         }
 
+
+
+
+
+        /// <summary>
+        /// 持久化同一故障码的挂起状态，保存成功后才更新展示与入库使用的缓存。
+        /// 解除挂起时通知控制器，为仍活动的故障安排从解除后开始的记录。
+        /// </summary>
+        /// <param name="faultCode">故障码，同码的报警统一挂起。</param>
+        /// <param name="status">1表示挂起，0表示解除挂起。</param>
+        /// <returns>保存成功返回true，故障码不存在返回false。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">status不是0或1。</exception>
+        /// <remarks>存储失败记录日志后向调用方传播，不返回伪成功。</remarks>
+        public static bool SetFaultSuspended(int faultCode, int status)
+        {
+            if (status != 0 && status != 1)
+                throw new ArgumentOutOfRangeException(nameof(status), "挂起状态只能为0或1。");
+            try
+            {
+                return ChangeFaultSuspension(faultCode, status, () =>
+                {
+                    using var warnContext = new WarnContext(configInfo.mysqlConn);
+                    var records = warnContext.Troubleshooting.Where(x => x.Code == faultCode).ToList();
+                    if (records.Count == 0) return false;
+                    foreach (var record in records) record.IsAlarmSuspended = status;
+                    warnContext.SaveChanges();
+                    return true;
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog($"设置故障码 {faultCode} 挂起状态失败。", ex);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 在独立写锁内执行挂起持久化，成功后用短状态锁发布不可变缓存快照。
+        /// 解除挂起通知在全局锁外执行；超过200ms时记录各阶段耗时。
+        /// </summary>
+        /// <param name="faultCode">需要修改的故障码。</param>
+        /// <param name="status">1挂起，0解除挂起。</param>
+        /// <param name="persist">持久化操作，不存在目标返回false，失败抛出异常。</param>
+        /// <returns>是否成功持久化并发布状态。</returns>
+        internal static bool ChangeFaultSuspension(int faultCode, int status, Func<bool> persist)
+        {
+            if (status != 0 && status != 1) throw new ArgumentOutOfRangeException(nameof(status));
+            var total = Stopwatch.StartNew();
+            double writeWaitMs = 0, databaseMs = 0, stateWaitMs = 0, stateHoldMs = 0, notificationMs = 0;
+            try
+            {
+                lock (faultSuspensionWriteSync)
+                {
+                    writeWaitMs = total.Elapsed.TotalMilliseconds;
+                    var database = Stopwatch.StartNew();
+                    bool saved;
+                    try
+                    {
+                        EnsureFaultSuspensionsLoaded();
+                        saved = persist();
+                    }
+                    finally { databaseMs = database.Elapsed.TotalMilliseconds; }
+                    if (!saved) return false;
+
+                    var previous = Volatile.Read(ref suspendedFaultCodes)!;
+                    bool wasSuspended = previous.Contains(faultCode);
+                    var updated = new HashSet<int>(previous);
+                    if (status == 1) updated.Add(faultCode);
+                    else updated.Remove(faultCode);
+
+                    var state = Stopwatch.StartNew();
+                    lock (FaultAlarmSync)
+                    {
+                        stateWaitMs = state.Elapsed.TotalMilliseconds;
+                        state.Restart();
+                        Volatile.Write(ref suspendedFaultCodes, updated);
+                        stateHoldMs = state.Elapsed.TotalMilliseconds;
+                    }
+                    if (wasSuspended && status == 0)
+                    {
+                        var notification = Stopwatch.StartNew();
+                        foreach (var controller in controllerList) controller.OnFaultResumed(faultCode);
+                        notificationMs = notification.Elapsed.TotalMilliseconds;
+                    }
+                    return true;
+                }
+            }
+            finally
+            {
+                if (total.ElapsedMilliseconds >= 200)
+                    logger.InfoLog($"故障挂起耗时：Code={faultCode}, Status={status}, "
+                        + $"等待写锁={writeWaitMs:F1}ms, 数据库={databaseMs:F1}ms, "
+                        + $"等待状态锁={stateWaitMs:F1}ms, 状态发布={stateHoldMs:F1}ms, "
+                        + $"解除通知={notificationMs:F1}ms, 总计={total.Elapsed.TotalMilliseconds:F1}ms");
+            }
+        }
+
+        /// <summary>
+        /// 从数据库查询当前已挂起且具有有效故障码的定义，供前端管理挂起项。
+        /// </summary>
+        /// <returns>挂起故障码及其描述列表。</returns>
+        /// <remarks>查询失败记录日志后向调用方传播，不伪装为空列表。</remarks>
+        public static List<SuspendedFaultCodeData> GetSuspendedFaultCode()
+        {
+            try
+            {
+                using (var warnContext = new WarnContext(configInfo.mysqlConn))
+                {
+                    return warnContext.Troubleshooting
+                        .Where(x => x.IsAlarmSuspended == 1 && x.Code.HasValue)
+                        .Select(x => new SuspendedFaultCodeData
+                        {
+                            FaultCode = x.Code.ToString(),
+                            Description = x.TroubleName
+                        })
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorLog("查询挂起故障码失败。", ex);
+                throw;
+            }
+        }
 
         private static readonly object rtdDictLock = new object();
 
