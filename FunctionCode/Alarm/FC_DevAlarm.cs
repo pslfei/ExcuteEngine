@@ -8,7 +8,7 @@ namespace FunctionCode
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
     [FCName("DevAlarm")]
     [FCDisplay("偏差报警")]
-    public partial class DevAlarm : Function
+    public partial class DevAlarm : Function, IFaultAlarm
     {
         [PinType(PinTypes.Input)]
         [PinDisplay("输入")]
@@ -49,6 +49,19 @@ namespace FunctionCode
         [PinType(PinTypes.Internal)]
         [PinDisplay("故障块")]
         public FaultOut faultOut = new FaultOut();
+
+        /// <summary>
+        /// 直接读取内部故障输出块的报警状态，供控制器统一展示和确认。
+        /// </summary>
+        public byte AlarmState => faultOut.AlarmState;
+
+        /// <summary>
+        /// 将确认操作传递给内部故障输出块，立即清除未确认状态。
+        /// </summary>
+        public void Ack()
+        {
+            faultOut.Ack();
+        }
 
         public long starttime = -1;
         public bool oldAlarm = false;

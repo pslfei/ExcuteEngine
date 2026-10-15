@@ -589,4 +589,9 @@ namespace TDServer.Service
         public int? AlarmType { get; set; }
     }
 
+    public class SuspendedFaultCodeData
+    {
+        public string FaultCode { get; set; }
+        public string Description { get; set; }
+    }
 }

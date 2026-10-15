@@ -32,5 +32,7 @@ namespace EngineCore.Models
 
         public string? position { get; set; }
         public string? command { get; set; }
+
+        public int? IsAlarmSuspended { get; set; } = 0;
     }
 }

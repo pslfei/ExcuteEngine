@@ -30,3 +30,10 @@ dotnet build DataCommSisKaT.sln --configuration Release --no-restore
 ```
 
 > 项目当前目标框架为 .NET 6。请确保本机已安装兼容的 .NET SDK 和项目所需的本机依赖。
+
+## 故障报警确认与挂起
+
+接口、状态转换、数据库字段部署和验证方式见
+[故障报警确认与挂起实现说明](TDServer.Service/故障报警确认与挂起实现说明.md)。
+
+挂起故障码的实时报警不返回，挂起期间新发生的报警不创建记录；挂起前已经入库的报警仍在恢复时更新结束时间。

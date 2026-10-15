@@ -24,13 +24,24 @@ namespace POWERSISAI
 
         public class Output_Info
         {
+            /// <summary>
+            /// 固定 PCA 子空间投影得到的连续重构值，不受诊断阈值和故障变量选择影响。
+            /// </summary>
             public float[][] reconData;
+
+            /// <summary>
+            /// SF_RB_PCA 诊断修正值。未触发诊断时与原始输入相同。
+            /// </summary>
+            public float[][] diagnosticReconData;
+
             public float[][] errorData;
             public float[][] paraState;
             public float R;
             public float[] SPE;
             public float[] FAI;
             public float[] Index;
+            public bool[] IsAbnormal;
+            public float[] Threshold;
         }
 
         public class Input
@@ -190,11 +201,17 @@ namespace POWERSISAI
         {
             public List<List<double>> reconData { get; set; }
 
+            public List<List<double>> diagnosticReconData { get; set; }
+
             public List<List<double>> errorData { get; set; }
 
             public List<double> Index { get; set; }
 
             public List<List<double>> paraState { get; set; }
+
+            public List<bool> IsAbnormal { get; set; }
+
+            public List<double> Threshold { get; set; }
 
             public string msg { get; set; }
         }
@@ -652,9 +669,12 @@ namespace POWERSISAI
                 int num2 = input.Test_Data.Length;
                 Output output = new Output();
                 List<List<double>> list = new List<List<double>>();
+                List<List<double>> diagnosticReconData = new List<List<double>>();
                 List<List<double>> list2 = new List<List<double>>();
                 List<List<double>> list3 = new List<List<double>>();
                 List<double> list4 = new List<double>();
+                List<bool> abnormalStates = new List<bool>();
+                List<double> thresholds = new List<double>();
                 string text = "";
                 for (int m = 0; m < num2; m++)
                 {
@@ -671,14 +691,29 @@ namespace POWERSISAI
                         {
                             return "";
                         }
-                        Matrix<double> matrix10 = Matrix<double>.Build.DenseOfColumnArrays(array3).Transpose() * matrix8 * Matrix<double>.Build.DenseOfColumnArrays(array3);
+                        Matrix<double> matrix12 = Matrix<double>.Build.DenseOfColumnArrays(array3);
+                        Matrix<double> matrix10 = matrix12.Transpose() * matrix8 * matrix12;
+
+                        // 固定 PCA 子空间投影：每个采样周期都使用相同的线性映射计算重构值。
+                        // 该结果不受报警阈值和 SF_RB_PCA 故障变量选择的影响，因此连续输入不会
+                        // 因诊断状态切换而在“实时值”和“故障修正值”之间产生硬跳变。
+                        Matrix<double> continuousReconstruction = matrix12.Transpose() * matrix2.Transpose() * matrix2;
                         List<double> list5 = new List<double>();
+                        List<double> diagnosticReconSample = new List<double>();
                         List<double> list6 = new List<double>();
                         List<double> list7 = new List<double>();
+
+                        for (int variableIndex = 0; variableIndex < input.Test_Data[m].Length; variableIndex++)
+                        {
+                            double continuousValue = continuousReconstruction[0, variableIndex]
+                                * info.para.Model_info.Train_X_std[variableIndex]
+                                + info.para.Model_info.Train_X_mean[variableIndex];
+                            list5.Add(continuousValue);
+                        }
+
                         if (matrix10[0, 0] > num)
                         {
                             Matrix<double> matrix11 = Matrix<double>.Build.Dense(array3.Length, 1);
-                            Matrix<double> matrix12 = Matrix<double>.Build.DenseOfColumnArrays(array3);
                             Matrix<double> matrix13 = matrix12.Transpose() * matrix8;
 
 
@@ -694,7 +729,7 @@ namespace POWERSISAI
                                 for (int num4 = 0; num4 < input.Test_Data[m].Length; num4++)
                                 {
                                     double num5 = ReconData[num4] * info.para.Model_info.Train_X_std[num4] + info.para.Model_info.Train_X_mean[num4];
-                                    list5.Add(num5);
+                                    diagnosticReconSample.Add(num5);
                                     list6.Add(array2[num4] - num5);
                                     list7.Add(ParaState[num4]);
                                 }
@@ -704,7 +739,7 @@ namespace POWERSISAI
                                 text = text + ",第[" + m + "]个样本出现错误：" + text2;
                                 for (int num6 = 0; num6 < input.Test_Data[m].Length; num6++)
                                 {
-                                    list5.Add(array2[num6]);
+                                    diagnosticReconSample.Add(array2[num6]);
                                     list6.Add(0.0);
                                     list7.Add(0.0);
                                 }
@@ -714,15 +749,18 @@ namespace POWERSISAI
                         {
                             for (int num7 = 0; num7 < input.Test_Data[m].Length; num7++)
                             {
-                                list5.Add(array2[num7]);
+                                diagnosticReconSample.Add(array2[num7]);
                                 list6.Add(0.0);
                                 list7.Add(0.0);
                             }
                         }
                         list.Add(list5);
+                        diagnosticReconData.Add(diagnosticReconSample);
                         list2.Add(list6);
                         list3.Add(list7);
                         list4.Add(matrix10[0, 0]);
+                        abnormalStates.Add(matrix10[0, 0] > num);
+                        thresholds.Add(num);
                     }
                     catch (Exception ex)
                     {
@@ -733,35 +771,64 @@ namespace POWERSISAI
                 }
                 text = ((!(text == "")) ? ("出现错误" + text) : "OK");
                 output.reconData = list;
+                output.diagnosticReconData = diagnosticReconData;
                 output.errorData = list2;
                 output.paraState = list3;
                 output.Index = list4;
+                output.IsAbnormal = abnormalStates;
+                output.Threshold = thresholds;
                 output.msg = text;
 
                 string returnStr = JsonConvert.SerializeObject(output);
 
-                OutputInfo = JsonConvert.DeserializeObject<Output_Info>(returnStr);
+                // 兼容尚未重新生成的旧版动态模型。新版生成代码会直接解析本次返回值，
+                // 不再依赖该静态共享对象。
+                OutputInfo = GetOutputInfo(returnStr);
 
                 return returnStr;
             }
             catch (Exception ex)
             {
-                logger.ErrorLog(ex.Message);
+                logger.ErrorLog($"PCA诊断失败，IndexType={IndexType}，SigmaType={SigmaType}", ex);
                 return "";
             }
 
         }
 
+        public static Output_Info GetOutputInfo(string jstr)
+        {
+            if (string.IsNullOrWhiteSpace(jstr))
+            {
+                throw new ArgumentException("PCA诊断结果不能为空。", nameof(jstr));
+            }
+
+            Output_Info outputInfo = JsonConvert.DeserializeObject<Output_Info>(jstr);
+            if (outputInfo == null)
+            {
+                throw new JsonSerializationException("无法反序列化PCA诊断结果。");
+            }
+
+            if (outputInfo.reconData == null
+                || outputInfo.errorData == null
+                || outputInfo.paraState == null
+                || outputInfo.Index == null)
+            {
+                throw new JsonSerializationException("PCA诊断结果缺少必要的输出字段。");
+            }
+
+            return outputInfo;
+        }
+
         public static float[][] GetReconData(string jstr)
         {
-            Output_Info output_Info = JsonConvert.DeserializeObject<Output_Info>(jstr);
+            Output_Info output_Info = GetOutputInfo(jstr);
             return output_Info.reconData;
 
         }
 
         public static float[][] GetErrorData(string jstr)
         {
-            Output_Info output_Info = JsonConvert.DeserializeObject<Output_Info>(jstr);
+            Output_Info output_Info = GetOutputInfo(jstr);
             return output_Info.errorData;
         }
 

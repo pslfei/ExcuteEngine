@@ -409,6 +409,9 @@ public partial class WarnContext : DbContext
                 .UseCollation("utf8mb4_general_ci");
 
             entity.Property(e => e.Id).HasColumnType("int(11)");
+            entity.Property(e => e.IsAlarmSuspended)
+                .HasColumnType("int(11)")
+                .HasDefaultValue(0);
         });
 
 
