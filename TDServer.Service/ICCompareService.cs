@@ -11,7 +11,6 @@ using NPOI.XSSF.UserModel;
 using PerformanceCalc;
 using System.Data;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Text.RegularExpressions;
 using Match = System.Text.RegularExpressions.Match;
 
@@ -2429,159 +2428,132 @@ namespace TDServer.Service
                 }
             }
 
-            using (HttpClient httpClient = new HttpClient())
+            if (!InfluxDBHelp.TryExecuteQuery(strsql, out List<DataItem> queryData, out string queryError))
             {
-                try
-                {
-                    InfluxQuery influxQuery = new InfluxQuery()
-                    {
-                        sql = strsql
-                    };
-
-                    var json = JsonConvert.SerializeObject(influxQuery);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var response = httpClient.PostAsync(ExcuteEngine.configInfo.InfluxDBQueryApiurl, content).Result;
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var responseContent = response.Content.ReadAsStringAsync().Result;
-                        var responseMsg = JsonConvert.DeserializeObject<Response2<List<DataItem>>>(responseContent);
-
-
-
-                        for (int i = 0; i < dict.Keys.Count; i++)
-                        {
-                            if (responseMsg.Data[i].series == null)
-                            {
-                                outstr = "数据获取获取不完整。";
-                                return false;
-                            }
-
-                        }
-
-                        CldIndexcondition eic = new CldIndexcondition();
-                        eic.Fh = Convert.ToDouble(responseMsg.Data[0].series[0].values[0][1]).To2d();
-                        eic.Hjwd = Convert.ToDouble(responseMsg.Data[1].series[0].values[0][1]).To2d();
-                        eic.Dwfrl = Math.Round(Convert.ToDouble(responseMsg.Data[2].series[0].values[0][1]) * ExcuteEngine.dwfrlCoefficient, 0);
-                        eic.Yl = Convert.ToDouble(responseMsg.Data[3].series[0].values[0][1]).To2d();
-                        eic.Zfl = Convert.ToDouble(responseMsg.Data[4].series[0].values[0][1]).To2d();
-                        eic.Acpywd = Convert.ToDouble(responseMsg.Data[5].series[0].values[0][1]).To2d();
-                        eic.Bcpywd = Convert.ToDouble(responseMsg.Data[6].series[0].values[0][1]).To2d();
-                        eic.KyqAckyqhyl = Convert.ToDouble(responseMsg.Data[7].series[0].values[0][1]).To2d();
-                        eic.KyqBckyqhyl = Convert.ToDouble(responseMsg.Data[8].series[0].values[0][1]).To2d();
-                        eic.Fhhtl = Convert.ToDouble(responseMsg.Data[9].series[0].values[0][1]).To2d();
-                        eic.Lzhtl = Convert.ToDouble(responseMsg.Data[10].series[0].values[0][1]).To2d();
-                        eic.Zzqwd = Convert.ToDouble(responseMsg.Data[11].series[0].values[0][1]).To2d();
-                        eic.Zzqyl = Convert.ToDouble(responseMsg.Data[12].series[0].values[0][1]).To2d();
-                        eic.Zrzqwd = Convert.ToDouble(responseMsg.Data[13].series[0].values[0][1]).To2d();
-                        eic.Zrzqyl = Convert.ToDouble(responseMsg.Data[14].series[0].values[0][1]).To2d();
-                        eic.Nqqby = ((Convert.ToDouble(responseMsg.Data[15].series[0].values[0][1]) + Convert.ToDouble(responseMsg.Data[16].series[0].values[0][1])) / 2).To2d();
-                        eic.Zgsll = Convert.ToDouble(responseMsg.Data[17].series[0].values[0][1]).To2d();
-                        eic.Lzczrqjwsll = ((Convert.ToDouble(responseMsg.Data[18].series[0].values[0][1]) + Convert.ToDouble(responseMsg.Data[19].series[0].values[0][1])) / 2).To2d();
-                        eic.Lyczrqjwsll = ((Convert.ToDouble(responseMsg.Data[20].series[0].values[0][1]) + Convert.ToDouble(responseMsg.Data[21].series[0].values[0][1])) / 2).To2d();
-                        eic.Grd = Convert.ToDouble(responseMsg.Data[22].series[0].values[0][1]).To2d();
-                        eic.Rll = Convert.ToDouble(responseMsg.Data[23].series[0].values[0][1]).To2d();
-                        eic.Sfwd = ((Convert.ToDouble(responseMsg.Data[24].series[0].values[0][1]) + Convert.ToDouble(responseMsg.Data[25].series[0].values[0][1]) +
-                                        Convert.ToDouble(responseMsg.Data[26].series[0].values[0][1]) + Convert.ToDouble(responseMsg.Data[27].series[0].values[0][1]) +
-                                        Convert.ToDouble(responseMsg.Data[28].series[0].values[0][1]) + Convert.ToDouble(responseMsg.Data[29].series[0].values[0][1])) / 6).To2d();
-                        eic.Pywd = ((Convert.ToDouble(responseMsg.Data[30].series[0].values[0][1]) + Convert.ToDouble(responseMsg.Data[31].series[0].values[0][1])) / 2).To2d();
-                        eic.Hf = Convert.ToDouble(responseMsg.Data[32].series[0].values[0][1]).To2d();
-                        eic.Fxs = Convert.ToDouble(responseMsg.Data[33].series[0].values[0][1]).To2d();
-                        eic.Qsf = Convert.ToDouble(responseMsg.Data[34].series[0].values[0][1]).To2d();
-                        eic.Hff = Convert.ToDouble(responseMsg.Data[35].series[0].values[0][1]).To2d();
-
-
-                        if (ExcuteEngine.optimizingFunction != null)
-                        {
-                            List<string> groupInfo = ExcuteEngine.optimizingFunction.FindGroupInfo(eic.Fh, eic.Hjwd, eic.Dwfrl);
-                            if (groupInfo != null && groupInfo.Count > 0)
-                            {
-                                using (WarnContext warnContext = new WarnContext(configInfo.mysqlConn))
-                                {
-                                    List<CldIndexcondition> cldIndexconditions = warnContext.CldIndexconditions.AsQueryable().Where(x => x.Fhqj == groupInfo[0] && x.Hjwdqj == groupInfo[1] && x.Dwfrlqj == groupInfo[2] && x.Type == 1).ToList();
-                                    if (cldIndexconditions.Count >= 5)//每个分组的专家库只能添加5条数据
-                                    {
-                                        outstr = "每个分组的专家库只能添加5条数据";
-                                        return false;
-                                    }
-                                    double jzfh = eic.Fh ?? 0;
-                                    double dwfrl = eic.Dwfrl ?? 0;
-                                    double rll = eic.Rll ?? 0;
-                                    double hql = 4.5;//含氢量   
-
-                                    eic.Fhqj = groupInfo[0];
-                                    eic.Hjwdqj = groupInfo[1];
-                                    eic.Dwfrlqj = groupInfo[2];
-                                    eic.Sj = dateTime;
-                                    string jstr = $"{{\"ov\":{eic.Yl},\"tpy\":{eic.Pywd},\"tsf\":{eic.Sfwd},\"D\":{eic.Zgsll},\"Ded\":1857,\"Mar\":{eic.Qsf},\"Har\":{hql},\"Mad\":{eic.Fxs},\"Aad\":{eic.Hf},\"Vad\":{eic.Hff},\"Qnetar\":{dwfrl},\"Clzc\":{eic.Fhhtl},\"Cfhc\":{eic.Lzhtl},\"X\":[1000, 750, 500, 400], \"y\": [0.38,0.37,0.36,0.35], \"pw\": {jzfh}}}";
-                                    PerformanceCalc.BoilerData boilerData = PerformanceCalc.PCalc.calcBoilerValue(jstr, out int status);
-                                    double glxl = 0;
-                                    if (boilerData != null)
-                                    {
-                                        glxl = boilerData.e;
-                                    }
-
-                                    //发电煤耗
-                                    double coal = PerformanceCalc.PCalc.ComputeCoal(dwfrl, rll, jzfh);
-
-                                    //汽机热耗
-                                    double? qjrh = InfluxDBHelp.GetQjrhValue(eic.Sj);
-
-
-                                    //锅炉效率目标值
-                                    double ebdst = PerformanceCalc.PCalc.compute_dst(jzfh, new List<double>() { 95.18 / 100, 95.23 / 100, 95.28 / 100, 95.13 / 100, 95.10 / 100 });
-
-                                    //锅炉效率耗差
-                                    double glxlhc = PerformanceCalc.PCalc.ComputeHC(glxl, ebdst, coal);
-
-
-                                    if (qjrh.HasValue)
-                                    {
-                                        //汽机热耗目标值
-                                        double qjrhdst = PerformanceCalc.PCalc.compute_dst(jzfh, new List<double>() { 7504d, 7594d, 7877d, 8078d, 8433d });
-
-                                        //汽机热耗耗差
-                                        double qjrhhc = PerformanceCalc.PCalc.ComputeHC(3600 / qjrh.Value, 3600 / qjrhdst, coal);
-
-                                        eic.Qjrh = qjrh?.To2d();
-                                        eic.Qjrhhc = qjrhhc.To2d();
-                                        eic.Zhhc = (qjrhhc + glxlhc).To2d();
-                                    }
-
-                                    eic.Glxl = (glxl * 100).To2d();
-                                    eic.Glxlhc = glxlhc.To2d();
-                                    eic.Type = 1;
-                                    warnContext.CldIndexconditions.Add(eic);
-                                    warnContext.SaveChanges();
-
-                                    return true;
-                                }
-                            }
-                            else
-                            {
-                                outstr = "没有找到对应的分组";
-                                return false;
-                            }
-
-                        }
-
-
-                        outstr = "没有找寻优计算块";
-                        return false;
-                    }
-                    else
-                    {
-                        outstr = response.ReasonPhrase + "-" + response.RequestMessage.ToString();
-                        return false;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    throw;
-                }
+                outstr = queryError;
+                return false;
             }
+
+            for (int i = 0; i < dict.Keys.Count; i++)
+            {
+                if (queryData[i].series == null)
+                {
+                    outstr = "数据获取获取不完整。";
+                    return false;
+                }
+
+            }
+
+            CldIndexcondition eic = new CldIndexcondition();
+            eic.Fh = Convert.ToDouble(queryData[0].series[0].values[0][1]).To2d();
+            eic.Hjwd = Convert.ToDouble(queryData[1].series[0].values[0][1]).To2d();
+            eic.Dwfrl = Math.Round(Convert.ToDouble(queryData[2].series[0].values[0][1]) * ExcuteEngine.dwfrlCoefficient, 0);
+            eic.Yl = Convert.ToDouble(queryData[3].series[0].values[0][1]).To2d();
+            eic.Zfl = Convert.ToDouble(queryData[4].series[0].values[0][1]).To2d();
+            eic.Acpywd = Convert.ToDouble(queryData[5].series[0].values[0][1]).To2d();
+            eic.Bcpywd = Convert.ToDouble(queryData[6].series[0].values[0][1]).To2d();
+            eic.KyqAckyqhyl = Convert.ToDouble(queryData[7].series[0].values[0][1]).To2d();
+            eic.KyqBckyqhyl = Convert.ToDouble(queryData[8].series[0].values[0][1]).To2d();
+            eic.Fhhtl = Convert.ToDouble(queryData[9].series[0].values[0][1]).To2d();
+            eic.Lzhtl = Convert.ToDouble(queryData[10].series[0].values[0][1]).To2d();
+            eic.Zzqwd = Convert.ToDouble(queryData[11].series[0].values[0][1]).To2d();
+            eic.Zzqyl = Convert.ToDouble(queryData[12].series[0].values[0][1]).To2d();
+            eic.Zrzqwd = Convert.ToDouble(queryData[13].series[0].values[0][1]).To2d();
+            eic.Zrzqyl = Convert.ToDouble(queryData[14].series[0].values[0][1]).To2d();
+            eic.Nqqby = ((Convert.ToDouble(queryData[15].series[0].values[0][1]) + Convert.ToDouble(queryData[16].series[0].values[0][1])) / 2).To2d();
+            eic.Zgsll = Convert.ToDouble(queryData[17].series[0].values[0][1]).To2d();
+            eic.Lzczrqjwsll = ((Convert.ToDouble(queryData[18].series[0].values[0][1]) + Convert.ToDouble(queryData[19].series[0].values[0][1])) / 2).To2d();
+            eic.Lyczrqjwsll = ((Convert.ToDouble(queryData[20].series[0].values[0][1]) + Convert.ToDouble(queryData[21].series[0].values[0][1])) / 2).To2d();
+            eic.Grd = Convert.ToDouble(queryData[22].series[0].values[0][1]).To2d();
+            eic.Rll = Convert.ToDouble(queryData[23].series[0].values[0][1]).To2d();
+            eic.Sfwd = ((Convert.ToDouble(queryData[24].series[0].values[0][1]) + Convert.ToDouble(queryData[25].series[0].values[0][1]) +
+                            Convert.ToDouble(queryData[26].series[0].values[0][1]) + Convert.ToDouble(queryData[27].series[0].values[0][1]) +
+                            Convert.ToDouble(queryData[28].series[0].values[0][1]) + Convert.ToDouble(queryData[29].series[0].values[0][1])) / 6).To2d();
+            eic.Pywd = ((Convert.ToDouble(queryData[30].series[0].values[0][1]) + Convert.ToDouble(queryData[31].series[0].values[0][1])) / 2).To2d();
+            eic.Hf = Convert.ToDouble(queryData[32].series[0].values[0][1]).To2d();
+            eic.Fxs = Convert.ToDouble(queryData[33].series[0].values[0][1]).To2d();
+            eic.Qsf = Convert.ToDouble(queryData[34].series[0].values[0][1]).To2d();
+            eic.Hff = Convert.ToDouble(queryData[35].series[0].values[0][1]).To2d();
+
+
+            if (ExcuteEngine.optimizingFunction != null)
+            {
+                List<string> groupInfo = ExcuteEngine.optimizingFunction.FindGroupInfo(eic.Fh, eic.Hjwd, eic.Dwfrl);
+                if (groupInfo != null && groupInfo.Count > 0)
+                {
+                    using (WarnContext warnContext = new WarnContext(configInfo.mysqlConn))
+                    {
+                        List<CldIndexcondition> cldIndexconditions = warnContext.CldIndexconditions.AsQueryable().Where(x => x.Fhqj == groupInfo[0] && x.Hjwdqj == groupInfo[1] && x.Dwfrlqj == groupInfo[2] && x.Type == 1).ToList();
+                        if (cldIndexconditions.Count >= 5)//每个分组的专家库只能添加5条数据
+                        {
+                            outstr = "每个分组的专家库只能添加5条数据";
+                            return false;
+                        }
+                        double jzfh = eic.Fh ?? 0;
+                        double dwfrl = eic.Dwfrl ?? 0;
+                        double rll = eic.Rll ?? 0;
+                        double hql = 4.5;//含氢量
+
+                        eic.Fhqj = groupInfo[0];
+                        eic.Hjwdqj = groupInfo[1];
+                        eic.Dwfrlqj = groupInfo[2];
+                        eic.Sj = dateTime;
+                        string jstr = $"{{\"ov\":{eic.Yl},\"tpy\":{eic.Pywd},\"tsf\":{eic.Sfwd},\"D\":{eic.Zgsll},\"Ded\":1857,\"Mar\":{eic.Qsf},\"Har\":{hql},\"Mad\":{eic.Fxs},\"Aad\":{eic.Hf},\"Vad\":{eic.Hff},\"Qnetar\":{dwfrl},\"Clzc\":{eic.Fhhtl},\"Cfhc\":{eic.Lzhtl},\"X\":[1000, 750, 500, 400], \"y\": [0.38,0.37,0.36,0.35], \"pw\": {jzfh}}}";
+                        PerformanceCalc.BoilerData boilerData = PerformanceCalc.PCalc.calcBoilerValue(jstr, out int status);
+                        double glxl = 0;
+                        if (boilerData != null)
+                        {
+                            glxl = boilerData.e;
+                        }
+
+                        //发电煤耗
+                        double coal = PerformanceCalc.PCalc.ComputeCoal(dwfrl, rll, jzfh);
+
+                        //汽机热耗
+                        double? qjrh = InfluxDBHelp.GetQjrhValue(eic.Sj);
+
+
+                        //锅炉效率目标值
+                        double ebdst = PerformanceCalc.PCalc.compute_dst(jzfh, new List<double>() { 95.18 / 100, 95.23 / 100, 95.28 / 100, 95.13 / 100, 95.10 / 100 });
+
+                        //锅炉效率耗差
+                        double glxlhc = PerformanceCalc.PCalc.ComputeHC(glxl, ebdst, coal);
+
+
+                        if (qjrh.HasValue)
+                        {
+                            //汽机热耗目标值
+                            double qjrhdst = PerformanceCalc.PCalc.compute_dst(jzfh, new List<double>() { 7504d, 7594d, 7877d, 8078d, 8433d });
+
+                            //汽机热耗耗差
+                            double qjrhhc = PerformanceCalc.PCalc.ComputeHC(3600 / qjrh.Value, 3600 / qjrhdst, coal);
+
+                            eic.Qjrh = qjrh?.To2d();
+                            eic.Qjrhhc = qjrhhc.To2d();
+                            eic.Zhhc = (qjrhhc + glxlhc).To2d();
+                        }
+
+                        eic.Glxl = (glxl * 100).To2d();
+                        eic.Glxlhc = glxlhc.To2d();
+                        eic.Type = 1;
+                        warnContext.CldIndexconditions.Add(eic);
+                        warnContext.SaveChanges();
+
+                        return true;
+                    }
+                }
+                else
+                {
+                    outstr = "没有找到对应的分组";
+                    return false;
+                }
+
+            }
+
+
+            outstr = "没有找寻优计算块";
+            return false;
         }
-
-
 
         public static bool DeleteExpertIC(int icid)
         {

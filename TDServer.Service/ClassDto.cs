@@ -6,6 +6,10 @@ namespace TDServer.Service
 {
     public class ConfigInfo
     {
+        /// <summary>
+        /// 时序读写代理根地址；为空时沿用原 InfluxDB 访问方式，修改后重启生效。
+        /// </summary>
+        public string TsqServerBaseUrl { get; set; } = string.Empty;
 
         public int ICCompareTime { get; set; }
 

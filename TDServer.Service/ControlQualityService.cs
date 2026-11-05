@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Globalization;
 using System.Net.Http.Headers;
-using System.Text;
 
 namespace TDServer.Service
 {
@@ -426,118 +425,93 @@ namespace TDServer.Service
 
 
                 ControlCurve controlCurve = new ControlCurve();
-                using (HttpClient httpClient = new HttpClient())
+                string sql = GetSql(new List<string>() { pn, limitPn });
+                sql += $"select last(pvalue) as pvalue from {limitPn} where time >= '{endtime.AddMonths(-1).ToUTCString()}' and time <= '{endtime.ToUTCString()}';";
+                if (!InfluxDBHelp.TryExecuteQuery(sql, out List<DataItem> queryData, out string queryError))
+                    return controlCurve;
+
+                List<List<string>> tsList = new List<List<string>>();
+                List<string[]> pvalueList = new List<string[]>();
+
+                foreach (var item in queryData)
                 {
-                    try
+                    if (item.series != null)
                     {
-                        InfluxQuery influxQuery = new InfluxQuery()
-                        {
-                            sql = GetSql(new List<string>() { $"{pn}", $"{limitPn}" })
-                        };
+                        List<string> tsList0 = item.series[0].values.Select(x => Convert.ToDateTime(x[0]).ToLocalTime().ToFormatString()).ToList();
+                        string[] pvalueList0 = item.series[0].values.Select(x => x[1]).ToArray();
+                        ExcuteEngine.FillNulls(pvalueList0);
 
-                        influxQuery.sql += $"select last(pvalue) as pvalue from {limitPn} where time >= '{endtime.AddMonths(-1).ToUTCString()}' and time <= '{endtime.ToUTCString()}';";
-
-                        var json = JsonConvert.SerializeObject(influxQuery);
-                        var content = new StringContent(json, Encoding.UTF8, "application/json");
-                        var response = httpClient.PostAsync(ExcuteEngine.configInfo.InfluxDBQueryApiurl, content).Result;
-
-
-                        if (response.IsSuccessStatusCode)
-                        {
-                            var responseContent = response.Content.ReadAsStringAsync().Result;
-                            var responseMsg = JsonConvert.DeserializeObject<Response2<List<DataItem>>>(responseContent);
-
-
-                            List<List<string>> tsList = new List<List<string>>();
-                            List<string[]> pvalueList = new List<string[]>();
-
-                            foreach (var item in responseMsg.Data)
-                            {
-                                if (item.series != null)
-                                {
-                                    List<string> tsList0 = item.series[0].values.Select(x => Convert.ToDateTime(x[0]).ToLocalTime().ToFormatString()).ToList();
-                                    string[] pvalueList0 = item.series[0].values.Select(x => x[1]).ToArray();
-                                    ExcuteEngine.FillNulls(pvalueList0);
-
-                                    tsList.Add(tsList0);
-                                    pvalueList.Add(pvalueList0);
-                                }
-                                else
-                                {
-                                    tsList.Add(null);
-                                    pvalueList.Add(null);
-                                }
-                            }
-
-                            List<double> upperValueList = pvalueList[0].Select(p => setpoint + upper).ToList();
-                            List<double> lowerValueList = pvalueList[0].Select(p => setpoint - upper).ToList();
-
-
-
-                            controlCurve.title = "控制品质历史曲线";
-
-
-                            if (!string.IsNullOrEmpty(limitPn))
-                            {
-                                controlCurve.curveData = new List<CurveData>
-                                {
-                                    new CurveData() { tag = $"{controlcfg.PointName}({controlcfg.Name})", tslist = tsList[0], pvalueList = pvalueList[0].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
-                                    new CurveData() { tag = $"{controlcfg.LimitPoint}", tslist = tsList[1] == null ? tsList[0] : tsList[1], pvalueList = pvalueList[1] == null ? Enumerable.Repeat(Convert.ToDouble(pvalueList[2][0]).To2d(), tsList[0].Count).ToList() : pvalueList[1].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() }
-                                };
-
-
-                                //controlCurve.curveData = new List<CurveData>
-                                //{
-                                //    new CurveData()
-                                //    {
-                                //        tag = $"{controlcfg.PointName}({controlcfg.Name})",
-                                //        tslist = tsList[0],
-                                //        pvalueList = pvalueList[0]?.Select(p => Convert.ToDouble(p).ToXd(4)).ToList() ?? new List<double>()
-                                //    }
-                                //};
-
-                                //// 检查 pvalueList[1] 是否为空
-                                //if (pvalueList[1] != null)
-                                //{
-                                //    controlCurve.curveData.Add(new CurveData()
-                                //    {
-                                //        tag = $"{controlcfg.LimitPoint}",
-                                //        tslist = tsList[1],
-                                //        pvalueList = pvalueList[1].Select(p => Convert.ToDouble(p).ToXd(4)).ToList()
-                                //    });
-                                //}
-                                //else
-                                //{
-                                //    // 如果 pvalueList[1] 为空，可以选择不添加该 CurveData 对象，或者添加一个空列表
-                                //    controlCurve.curveData.Add(new CurveData()
-                                //    {
-                                //        tag = $"{controlcfg.LimitPoint}",
-                                //        tslist = tsList[0],
-                                //        pvalueList = Enumerable.Repeat(0.0, tsList[0].Count).ToList()
-                                //    });
-                                //}
-
-                            }
-                            else
-                            {
-                                controlCurve.curveData = new List<CurveData>
-                                {
-                                    new CurveData() { tag = $"{controlcfg.PointName}({controlcfg.Name})", tslist = tsList[0], pvalueList = pvalueList[0].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
-                                    new CurveData() { tag = "upper(上限)", tslist = tsList[0], pvalueList = upperValueList },
-                                    new CurveData() { tag = "lower(下限)", tslist = tsList[0], pvalueList = lowerValueList }
-                                };
-                            }
-
-                        }
+                        tsList.Add(tsList0);
+                        pvalueList.Add(pvalueList0);
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        throw;
+                        tsList.Add(null);
+                        pvalueList.Add(null);
                     }
                 }
+
+                List<double> upperValueList = pvalueList[0].Select(p => setpoint + upper).ToList();
+                List<double> lowerValueList = pvalueList[0].Select(p => setpoint - upper).ToList();
+
+
+
+                controlCurve.title = "控制品质历史曲线";
+
+
+                if (!string.IsNullOrEmpty(limitPn))
+                {
+                    controlCurve.curveData = new List<CurveData>
+                    {
+                        new CurveData() { tag = $"{controlcfg.PointName}({controlcfg.Name})", tslist = tsList[0], pvalueList = pvalueList[0].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
+                        new CurveData() { tag = $"{controlcfg.LimitPoint}", tslist = tsList[1] == null ? tsList[0] : tsList[1], pvalueList = pvalueList[1] == null ? Enumerable.Repeat(Convert.ToDouble(pvalueList[2][0]).To2d(), tsList[0].Count).ToList() : pvalueList[1].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() }
+                    };
+
+
+                    //controlCurve.curveData = new List<CurveData>
+                    //{
+                    //    new CurveData()
+                    //    {
+                    //        tag = $"{controlcfg.PointName}({controlcfg.Name})",
+                    //        tslist = tsList[0],
+                    //        pvalueList = pvalueList[0]?.Select(p => Convert.ToDouble(p).ToXd(4)).ToList() ?? new List<double>()
+                    //    }
+                    //};
+
+                    //// 检查 pvalueList[1] 是否为空
+                    //if (pvalueList[1] != null)
+                    //{
+                    //    controlCurve.curveData.Add(new CurveData()
+                    //    {
+                    //        tag = $"{controlcfg.LimitPoint}",
+                    //        tslist = tsList[1],
+                    //        pvalueList = pvalueList[1].Select(p => Convert.ToDouble(p).ToXd(4)).ToList()
+                    //    });
+                    //}
+                    //else
+                    //{
+                    //    // 如果 pvalueList[1] 为空，可以选择不添加该 CurveData 对象，或者添加一个空列表
+                    //    controlCurve.curveData.Add(new CurveData()
+                    //    {
+                    //        tag = $"{controlcfg.LimitPoint}",
+                    //        tslist = tsList[0],
+                    //        pvalueList = Enumerable.Repeat(0.0, tsList[0].Count).ToList()
+                    //    });
+                    //}
+
+                }
+                else
+                {
+                    controlCurve.curveData = new List<CurveData>
+                    {
+                        new CurveData() { tag = $"{controlcfg.PointName}({controlcfg.Name})", tslist = tsList[0], pvalueList = pvalueList[0].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
+                        new CurveData() { tag = "upper(上限)", tslist = tsList[0], pvalueList = upperValueList },
+                        new CurveData() { tag = "lower(下限)", tslist = tsList[0], pvalueList = lowerValueList }
+                    };
+                }
+
                 return controlCurve;
             }
-
         }
         public static bool DeleteControl(int id)
         {

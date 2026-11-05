@@ -710,67 +710,42 @@ namespace TDServer.Service
 
 
                 EconomicCurve economicCurve = new EconomicCurve();
-                using (HttpClient httpClient = new HttpClient())
+                string sql = GetSql(new List<string>() { $"{historycfg.pointName}", $"{historycfg.pointName.Replace(".", "_").ToLower()}_normal", $"{historycfg.pointName.Replace(".", "_").ToLower()}_bad", $"{historycfg.pointName.Replace(".", "_").ToLower()}_morebad" });
+                if (!InfluxDBHelp.TryExecuteQuery(sql, out List<DataItem> queryData, out string queryError))
+                    return economicCurve;
+
+                List<List<string>> tsList = new List<List<string>>();
+                List<string[]> pvalueList = new List<string[]>();
+                foreach (var item in queryData)
                 {
-                    try
+                    if (item.series != null)
                     {
-                        InfluxQuery influxQuery = new InfluxQuery()
-                        {
-                            sql = GetSql(new List<string>() { $"{historycfg.pointName}", $"{historycfg.pointName.Replace(".", "_").ToLower()}_normal", $"{historycfg.pointName.Replace(".", "_").ToLower()}_bad", $"{historycfg.pointName.Replace(".", "_").ToLower()}_morebad" })
-                        };
+                        List<string> tsList0 = item.series[0].values.Select(x => Convert.ToDateTime(x[0]).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")).ToList();
+                        string[] pvalueList0 = item.series[0].values.Select(x => x[1]).ToArray();
+                        ExcuteEngine.FillNulls(pvalueList0);
 
-                        var json = JsonConvert.SerializeObject(influxQuery);
-                        var content = new StringContent(json, Encoding.UTF8, "application/json");
-                        var response = httpClient.PostAsync(ExcuteEngine.configInfo.InfluxDBQueryApiurl, content).Result;
-                        if (response.IsSuccessStatusCode)
-                        {
-                            var responseContent = response.Content.ReadAsStringAsync().Result;
-                            var responseMsg = JsonConvert.DeserializeObject<Response2<List<DataItem>>>(responseContent);
-
-
-                            List<List<string>> tsList = new List<List<string>>();
-                            List<string[]> pvalueList = new List<string[]>();
-                            foreach (var item in responseMsg.Data)
-                            {
-                                if (item.series != null)
-                                {
-                                    List<string> tsList0 = item.series[0].values.Select(x => Convert.ToDateTime(x[0]).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")).ToList();
-                                    string[] pvalueList0 = item.series[0].values.Select(x => x[1]).ToArray();
-                                    ExcuteEngine.FillNulls(pvalueList0);
-
-                                    tsList.Add(tsList0);
-                                    pvalueList.Add(pvalueList0);
-                                }
-                                else
-                                {
-                                    tsList.Add(null);
-                                    pvalueList.Add(null);
-                                }
-                            }
-
-                            economiccfg economiccfg = warnContext.economiccfgs.FirstOrDefault(x => x.pointName == historycfg.pointName);
-
-                            economicCurve.title = economiccfg?.subName;
-                            economicCurve.curveData = new List<CurveData>
-                            {
-                                new CurveData() { tag = "实时值", tslist = tsList[0], pvalueList = pvalueList[0].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
-                                new CurveData() { tag = "一般报警值", tslist = tsList[1], pvalueList = pvalueList[1].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
-                                new CurveData() { tag = "严重报警值", tslist = tsList[2], pvalueList = pvalueList[2].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
-                                new CurveData() { tag = "非常严重报警值", tslist = tsList[3], pvalueList = pvalueList[3].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() }
-                            };
-
-                            return economicCurve;
-                        }
-                        else
-                        {
-                            return economicCurve;
-                        }
+                        tsList.Add(tsList0);
+                        pvalueList.Add(pvalueList0);
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        throw;
+                        tsList.Add(null);
+                        pvalueList.Add(null);
                     }
                 }
+
+                economiccfg economiccfg = warnContext.economiccfgs.FirstOrDefault(x => x.pointName == historycfg.pointName);
+
+                economicCurve.title = economiccfg?.subName;
+                economicCurve.curveData = new List<CurveData>
+                {
+                    new CurveData() { tag = "实时值", tslist = tsList[0], pvalueList = pvalueList[0].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
+                    new CurveData() { tag = "一般报警值", tslist = tsList[1], pvalueList = pvalueList[1].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
+                    new CurveData() { tag = "严重报警值", tslist = tsList[2], pvalueList = pvalueList[2].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() },
+                    new CurveData() { tag = "非常严重报警值", tslist = tsList[3], pvalueList = pvalueList[3].Select(p => Convert.ToDouble(p).ToXd(4)).ToList() }
+                };
+
+                return economicCurve;
             }
         }
         public static bool DeleteEconomicAlarm(int id)

@@ -1,4 +1,5 @@
 {
+  "TsqServerBaseUrl": "",
   "ICCompareTime": 10000,
   "RunCycle": 3000,
   "rtserverport": 5000,
