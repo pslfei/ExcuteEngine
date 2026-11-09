@@ -2669,6 +2669,17 @@ public partial class WarnContext : DbContext
                 .HasMaxLength(250)
                 .HasComment("回写点名称");
 
+            // 仅用于显式配置的旧版库：缺少回写列时不读取它们，运行时默认为不回写。
+            if (Environment.GetEnvironmentVariable("TDK_LEGACY_WARNPOINT_SCHEMA") == "1")
+            {
+                entity.Ignore(e => e.IsWriteBack);
+                entity.Ignore(e => e.WriteBackPointName);
+                // 标准报警模式只有高一、高二、低一；扩展阈值不从标准库读取。
+                entity.Ignore(e => e.Up3Limit);
+                entity.Ignore(e => e.LowLowLimit);
+                entity.Ignore(e => e.Low3Limit);
+            }
+
         });
 
         modelBuilder.Entity<Pointshow>(entity =>

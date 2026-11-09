@@ -125,6 +125,15 @@ namespace TDServer.Service
         [HttpPost]
         public async Task<IActionResult> UpdateWarnPoint([FromBody] WarnPointUpdateInfo warnPointUpdateInfo)
         {
+            if (warnPointUpdateInfo?.cldWarnpoint == null)
+                return BadRequest(new { Message = "请求必须包含 cldWarnpoint 对象" });
+            var point = warnPointUpdateInfo.cldWarnpoint;
+            if (string.IsNullOrWhiteSpace(point.PointName) || warnPointUpdateInfo.DbAction < 0 || warnPointUpdateInfo.DbAction > 2)
+                return BadRequest(new { Message = "PointName 或 DbAction 无效" });
+            if (ExcuteEngine.cldWarnpointList == null ||
+                (point.ModelOrrule == 0 && ExcuteEngine.RTDDict == null) ||
+                (point.ModelOrrule == 1 && ExcuteEngine.RTDDict_Rule == null))
+                return StatusCode(503, new { Message = "预警运行缓存尚未初始化" });
             bool result = ExcuteEngine.UpdateWarnPoint(warnPointUpdateInfo);
             return Ok(result ? "OK" : "fail");
         }
