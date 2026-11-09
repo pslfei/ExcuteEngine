@@ -3217,13 +3217,28 @@ namespace TDServer.Service
             float? up3Limit = cldWarnpoint.Up3Limit.ToFloatOrNull();
             float? low3Limit = cldWarnpoint.Low3Limit.ToFloatOrNull();
 
-            if (modelOrRule == 0 && !RTDDict.ContainsKey(warnPointName))
+            if (modelOrRule == 0)
             {
-                var lAExWarn = new LAExWarn(QualityTypes.Good, isEnabled, unit, up1Limit, low1Limit, up2Limit, low2Limit, up3Limit, low3Limit, delayTime, modelOrRule, -1, -1, alarmLevel, false, false, false, false, false, 0, 0, 0.0f, 0, 0.0f)
+                var warnList = RTDDict.GetOrAdd(warnPointName, _ => new List<object>());
+                lock (warnList)
                 {
-                    WarnConstraint = warnConstraint
-                };
-                RTDDict.TryAdd(warnPointName, new List<object>(1) { lAExWarn });
+                    var existing = warnList.OfType<LAExWarn>()
+                        .FirstOrDefault(x => x.FcBlockID == cldWarnpoint.CldFcblockId);
+                    if (existing is not null)
+                    {
+                        UpdateWarnProperties(existing, cldWarnpoint);
+                    }
+                    else
+                    {
+                        var lAExWarn = new LAExWarn(QualityTypes.Good, isEnabled, unit, up1Limit, low1Limit, up2Limit, low2Limit, up3Limit, low3Limit, delayTime, modelOrRule, -1, -1, alarmLevel, false, false, false, false, false, 0, 0, 0.0f, 0, 0.0f)
+                        {
+                            FcBlockID = cldWarnpoint.CldFcblockId,
+                            WarnConstraint = warnConstraint
+                        };
+                        UpdateWarnProperties(lAExWarn, cldWarnpoint);
+                        warnList.Add(lAExWarn);
+                    }
+                }
             }
             else if (modelOrRule == 1) // 去掉 !ContainsKey 判断，允许进入逻辑进行更新
             {
@@ -3319,7 +3334,12 @@ namespace TDServer.Service
         /// <returns></returns>
         public static bool UpdateWarnPoint(WarnPointUpdateInfo warnPointUpdateInfo)
         {
+            if (warnPointUpdateInfo?.cldWarnpoint == null)
+                throw new ArgumentException("请求必须包含 cldWarnpoint 对象", nameof(warnPointUpdateInfo));
             CldWarnpoint cldWarnpoint = warnPointUpdateInfo.cldWarnpoint;
+            string stage = "enter";
+            try
+            {
             lock (warnPointLock)
             {
                 if (warnPointUpdateInfo.DbAction == 2)
@@ -3343,81 +3363,78 @@ namespace TDServer.Service
                 }
                 else if (warnPointUpdateInfo.DbAction == 1)
                 {
+                    stage = "resolve-point";
                     string pointName = cldWarnpoint.PointName ?? "";
 
-                    //// 同步更新 cldWarnpointList 中对应记录的 IsWriteBack 和 WriteBackPointName
-                    //var existingWarnpoint = cldWarnpointList.FirstOrDefault(x => x.Id == cldWarnpoint.Id);
-                    //if (existingWarnpoint != null)
-                    //{
-                    //    existingWarnpoint.IsWriteBack = cldWarnpoint.IsWriteBack;
-                    //    existingWarnpoint.WriteBackPointName = cldWarnpoint.WriteBackPointName;
-                    //}
-
-                    var existingIndex = cldWarnpointList.FindIndex(x => x.Id == cldWarnpoint.Id);
-                    if (existingIndex >= 0)
+                    bool updated = false;
+                    if (cldWarnpoint.ModelOrrule == 0)
                     {
-                        // 已存在：整体替换为新对象
-                        var newList = new List<CldWarnpoint>(cldWarnpointList);
-                        newList[existingIndex] = cldWarnpoint;
-                        cldWarnpointList = newList;
-                    }
-
-                    //WarnStatus为启动或停止
-                    if (cldWarnpoint.WarnStatus > 0)
-                    {
-                        if (cldWarnpoint.ModelOrrule == 0)
+                        stage = "lookup-model";
+                        if (!RTDDict.TryGetValue(pointName, out var warnList) || warnList == null)
                         {
-                            // 模型预警点处理（保持不变）
-                            if (RTDDict.TryGetValue(pointName, out List<object> warnList) && warnList != null)
+                            return false;
+                        }
+
+                        lock (warnList)
+                        {
+                            // 运行和停止都必须定位到指定功能块，不能使用首个运行中的模型。
+                            var target = warnList.OfType<LAExWarn>()
+                                .FirstOrDefault(x => x.FcBlockID == cldWarnpoint.CldFcblockId);
+                            if (target is null)
                             {
-                                lock (warnList)
+                                return false;
+                            }
+
+                            stage = "update-model-properties";
+                            updated = UpdateWarnProperties(target, cldWarnpoint);
+                            if (updated && cldWarnpoint.WarnStatus > 0)
+                            {
+                                foreach (var other in warnList.OfType<LAExWarn>())
                                 {
-                                    foreach (var item in warnList.OfType<LAExWarn>())
+                                    if (other.FcBlockID != cldWarnpoint.CldFcblockId)
                                     {
-                                        if (item.FcBlockID == cldWarnpoint.CldFcblockId)
-                                        {
-                                            UpdateWarnProperties(item, cldWarnpoint);
-                                        }
-                                        else
-                                        {
-                                            item.Runable = false;
-                                        }
+                                        other.Runable = false;
                                     }
                                 }
                             }
                         }
-                        else if (cldWarnpoint.ModelOrrule == 1 && RTDDict_Rule.TryGetValue(pointName, out var ruleItem))
-                        {
-                            return ruleItem switch
-                            {
-                                LAExWarn laExWarn => UpdateWarnProperties(laExWarn, cldWarnpoint),
-                                LDExWarn ldExWarn => UpdateWarnProperties(ldExWarn, cldWarnpoint),
-                                _ => false
-                            };
-                        }
                     }
-                    else
+                    else if (cldWarnpoint.ModelOrrule == 1 && RTDDict_Rule.TryGetValue(pointName, out var ruleItem))
                     {
-                        if (cldWarnpoint.ModelOrrule == 0)
+                        stage = "update-rule-properties";
+                        updated = ruleItem switch
                         {
-                            if (GetFirstRunableWarn(pointName) is LAExWarn modelWarn)
-                            {
-                                return UpdateWarnProperties(modelWarn, cldWarnpoint);
-                            }
-                        }
-                        else if (cldWarnpoint.ModelOrrule == 1 && RTDDict_Rule.TryGetValue(pointName, out var ruleItem))
-                        {
-                            return ruleItem switch
-                            {
-                                LAExWarn laExWarn => UpdateWarnProperties(laExWarn, cldWarnpoint),
-                                LDExWarn ldExWarn => UpdateWarnProperties(ldExWarn, cldWarnpoint),
-                                _ => false
-                            };
-                        }
+                            LAExWarn laExWarn => UpdateWarnProperties(laExWarn, cldWarnpoint),
+                            LDExWarn ldExWarn => UpdateWarnProperties(ldExWarn, cldWarnpoint),
+                            _ => false
+                        };
                     }
-                    return false;
+
+                    if (!updated)
+                    {
+                        return false;
+                    }
+
+                    // 运行对象更新成功后再替换配置缓存。
+                    stage = "replace-config-cache";
+                    var existingIndex = cldWarnpointList.FindIndex(x => x.Id == cldWarnpoint.Id);
+                    if (existingIndex >= 0)
+                    {
+                        var newList = new List<CldWarnpoint>(cldWarnpointList);
+                        newList[existingIndex] = cldWarnpoint;
+                        cldWarnpointList = newList;
+                    }
+                    return true;
                 }
                 return false;
+            }
+            }
+            catch (Exception ex)
+            {
+                string context = $"UpdateWarnPoint stage={stage} id={cldWarnpoint.Id} point={cldWarnpoint.PointName} block={cldWarnpoint.CldFcblockId} action={warnPointUpdateInfo.DbAction} status={cldWarnpoint.WarnStatus}";
+                logger.ErrorLog(context, ex);
+                Console.Error.WriteLine($"{context}\n{ex}");
+                throw new InvalidOperationException($"PCS 更新异常，阶段={stage}，测点ID={cldWarnpoint.Id}；请查看服务日志", ex);
             }
         }
 

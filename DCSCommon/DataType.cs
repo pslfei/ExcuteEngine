@@ -492,8 +492,16 @@ namespace DCSCommon
         /// </summary>
         private string elementTypeName = "";
 
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr memcpy(void* dest, void* src, long size);
+        [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr WindowsMemcpy(void* dest, void* src, long size);
+
+        /// <summary>保持Windows原实现；Linux使用.NET内存复制，避免加载Windows CRT。</summary>
+        public static IntPtr memcpy(void* dest, void* src, long size)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return WindowsMemcpy(dest, src, size);
+            Buffer.MemoryCopy(src, dest, size, size);
+            return (IntPtr)dest;
+        }
 
         /// <summary>
         /// 获得或设置元素类型名称

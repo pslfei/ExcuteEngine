@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Reflection;
+using TDServer.Service.AgentV2;
 
 
 namespace TDServer.Service
@@ -18,25 +19,36 @@ namespace TDServer.Service
         public void Init(int port)
         {
             var builder = WebApplication.CreateBuilder();
+            // 独立开关默认关闭；关闭时不注册任何 v2 控制器。
+            bool agentEnabled = bool.TryParse(builder.Configuration["AgentApi:Enabled"], out var configuredEnabled) && configuredEnabled;
             // 添加日志记录器
             builder.Services.AddControllers()
-                .AddApplicationPart(Assembly.Load(new AssemblyName(AssemblyName!)));
+                .AddApplicationPart(Assembly.Load(new AssemblyName(AssemblyName!)))
+                .ConfigureApplicationPartManager(manager => manager.FeatureProviders.Add(new AgentControllerFeatureProvider(agentEnabled)));
 
             // 添加Swagger
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "性能计算API接口文档", Version = "v1" });
+                if (agentEnabled)
+                {
+
+                    // 新旧接口合并到原文档，通过URL区分；开关关闭时仍移除新增控制器。
+                    c.DocInclusionPredicate((documentName, api) => documentName == "v1");
+                    string xmlPath = Path.Combine(AppContext.BaseDirectory, "TDServer.Service.xml");
+                    if (File.Exists(xmlPath)) c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+                }
 
                 //   c.IncludeXmlComments(
                 //    $"{Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetExecutingAssembly().GetName().Name}.xml")}",
                 //    true
                 //);
             });
-         
+
             //builder.Services.AddCorsSetup(CorsOrigins); // 跨域
             builder.Services.AddHttpClient(); //注入 httpclinet 用于调用外部API
 
-            
+
             var app = builder.Build();
 
             app.UseSwagger(c =>
@@ -70,19 +82,22 @@ namespace TDServer.Service
 
 
 
-            app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "PerformanceCalcInspection v1"); });
-            
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "PerformanceCalcInspection v1");
+            });
+
             // 跨域
             app.UseCors(x => x
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .SetIsOriginAllowed(origin => true) // allow any origin
                 .AllowCredentials()); // allow credentials
-           
+
             // 配置异常中间件
             app.ConfigureExceptionHandler();
             app.UseRouting();
-          
+
             //// 设置 指定目录的文件 可以被访问 start
             //var staticfile = new StaticFileOptions();
             //var cpath = Directory.GetCurrentDirectory();

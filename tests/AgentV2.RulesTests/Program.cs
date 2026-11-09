@@ -1,0 +1,21 @@
+using TDServer.Service.AgentV2;
+var zero = new DateTime(2026, 11, 1);
+DateTime T(int h) => zero.AddHours(h);
+int tests = 0;
+void Check(bool ok, string why) { if (!ok) throw new Exception(why); tests++; }
+Check(!AlarmComparisonRules.Overlaps(T(4), null, T(0), T(4)), "不包含窗口结束才发生的事件");
+Check(!AlarmComparisonRules.Overlaps(T(0), T(4), T(4), T(8)), "在窗口开始恢复不算期间存在");
+Check(AlarmComparisonRules.ActiveBefore(T(0), T(4), T(4)), "恢复恰在末端，左极限仍活动");
+Check(!AlarmComparisonRules.ActiveBefore(T(4), null, T(4)), "开始恰在末端，左极限不活动");
+Check(AlarmComparisonRules.Overlaps(T(-24), null, T(0), T(4)), "旧未恢复记录覆盖基准窗口");
+Check(!AlarmComparisonRules.RecoveredInComparison(T(0), T(5), T(4), T(6), T(8)), "间隔中恢复不能计入对比恢复");
+Check(AlarmComparisonRules.RecoveredInComparison(T(0), T(6), T(4), T(6), T(8)), "对比开始时恢复计入");
+Check(!AlarmComparisonRules.RecoveredInComparison(T(0), T(8), T(4), T(6), T(8)), "对比结束时恢复不计入");
+Check(!AlarmComparisonRules.RecoveredInComparison(T(6), T(7), T(4), T(6), T(8)), "新发新恢复不算基准状态的恢复");
+Check(AlarmComparisonRules.RecordedDurationSeconds(T(0), T(8), T(4)) == 14400, "持续时间截到观察末端");
+Check(AlarmComparisonRules.RecordedDurationSeconds(T(4), T(2), T(8)) == 0, "异常数据不输出负时长");
+Check(AlarmComparisonRules.RepeatedIdentity("model_warning", "P", null, null, 1) == null, "模型实例缺失不伪造重复身份");
+Check(AlarmComparisonRules.RepeatedIdentity("fault_diagnosis", null, "", 42, null) == null, "故障缺来源不归并");
+Check(AlarmComparisonRules.RepeatedIdentity("rule_warning", "P", null, null, 1) != AlarmComparisonRules.RepeatedIdentity("rule_warning", "P", null, null, 2), "同点不同规则等级不能归并");
+Check(AlarmComparisonRules.RepeatedIdentity("fault_diagnosis", null, "A", 42, null) != AlarmComparisonRules.RepeatedIdentity("fault_diagnosis", null, "B", 42, null), "不同故障来源不能归并");
+Console.WriteLine($"Passed {tests} comparison boundary and identity assertions.");
