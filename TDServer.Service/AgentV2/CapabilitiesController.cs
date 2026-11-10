@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace TDServer.Service.AgentV2;
 
-/// <summary>提供七号机智能体接口能力信息。</summary>
+/// <summary>提供当前配置机组的智能体接口能力信息。</summary>
 [ApiController]
 [Route("api/v2/capabilities")]
 [ApiExplorerSettings(GroupName = "agent-v2")]
@@ -22,9 +22,8 @@ public sealed class CapabilitiesController : ControllerBase
     {
         string database = AgentDataSource.Database(_configuration);
         bool available = !string.IsNullOrWhiteSpace(database) && database.Equals(AgentDataSource.ActualDatabase(), StringComparison.OrdinalIgnoreCase);
-        bool production = database.Equals("warnnew", StringComparison.OrdinalIgnoreCase);
-        string sourceId = _configuration["AgentApi:SourceId"] ?? (production ? "pw-unit7" : "test-" + database);
-        int? unitId = int.TryParse(_configuration["AgentApi:UnitId"], out var configuredUnit) ? configuredUnit : production ? 7 : null;
+        string sourceId = AgentApiConfiguration.SourceId(_configuration);
+        int? unitId = AgentApiConfiguration.UnitId(_configuration);
         return Ok(new {
         data = new
         {

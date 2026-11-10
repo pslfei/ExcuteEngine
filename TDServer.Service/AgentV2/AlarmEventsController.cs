@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -172,8 +172,8 @@ public sealed partial class AlarmEventsController : ControllerBase
     }
     private string SourceDatabase => AgentDataSource.Database(_config);
     private string DataOrigin => AgentDataSource.IsReference(SourceDatabase) ? "reference_test_data" : "unverified";
-    private int? SourceUnitId => int.TryParse(_config["AgentApi:UnitId"], out int id) ? id : null;
-    private string SourceId => _config["AgentApi:SourceId"] ?? (SourceDatabase == "test001" ? "reference-test001" : "local-" + SourceDatabase);
+    private int? SourceUnitId => AgentApiConfiguration.UnitId(_config);
+    private string SourceId => AgentApiConfiguration.SourceId(_config);
     private string? Connection()
     {
         string? connection = ExcuteEngine.configInfo?.mysqlConn;
