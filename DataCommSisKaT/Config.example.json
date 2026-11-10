@@ -1,4 +1,4 @@
-{
+﻿{
   "TsqServerBaseUrl": "",
   "ICCompareTime": 10000,
   "RunCycle": 3000,
@@ -63,5 +63,11 @@
     "pageinput_mad": 4.06,
     "pageinput_clzc": 1.5,
     "pageinput_cfhc": 0.8
+  },
+  "AgentApi": {
+    "Enabled": false,
+    "SourceId": "",
+    "UnitId": 0,
+    "StorageOffsetMinutes": 480
   }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -16,9 +17,21 @@ namespace TDServer.Service
         private const string CorsOrigins = "_myAllowSpecificOrigins"; // 定义 跨域
         private static readonly string? AssemblyName = typeof(InitServer).Assembly.GetName().Name;
 
+        private readonly IConfiguration _agentConfiguration;
+
+        /// <summary>复用主程序加载的 Config.json；冻结新版接口配置，避免运行中机组标识漂移。</summary>
+        public InitServer(IConfiguration configuration)
+        {
+            _agentConfiguration = AgentApiConfiguration.CreateSnapshot(configuration, out var error);
+            if (error != null)
+                Console.Error.WriteLine($"新版智能体接口未启用：{error} 原接口和计算引擎不受此开关影响。");
+        }
+
         public void Init(int port)
         {
             var builder = WebApplication.CreateBuilder();
+            // 只覆盖 AgentApi 配置，不改变旧 API 的宿主配置、端口和数据库连接。
+            builder.Configuration.AddConfiguration(_agentConfiguration);
             // 独立开关默认关闭；关闭时不注册任何 v2 控制器。
             bool agentEnabled = bool.TryParse(builder.Configuration["AgentApi:Enabled"], out var configuredEnabled) && configuredEnabled;
             // 添加日志记录器

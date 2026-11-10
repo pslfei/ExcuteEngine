@@ -1,4 +1,4 @@
-using EngineCore;
+﻿using EngineCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
@@ -31,8 +31,8 @@ public sealed class EntitiesController : ControllerBase
     }
 
     private string AllowedDatabase => AgentDataSource.Database(_configuration);
-    private string SourceId => _configuration["AgentApi:SourceId"] ?? (AllowedDatabase.Equals("warnnew", StringComparison.OrdinalIgnoreCase) ? "pw-unit7" : "test-" + AllowedDatabase);
-    private int? UnitId => int.TryParse(_configuration["AgentApi:UnitId"], out int id) ? id : AllowedDatabase == "warnnew" ? 7 : null;
+    private string SourceId => AgentApiConfiguration.SourceId(_configuration);
+    private int? UnitId => AgentApiConfiguration.UnitId(_configuration);
     internal static string DeviceCandidateId(string name) => "ent_device_" + Convert.ToBase64String(Encoding.UTF8.GetBytes(name)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     internal static string? DecodeDeviceCandidate(string id)
     {
